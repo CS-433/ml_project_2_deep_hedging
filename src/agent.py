@@ -2,8 +2,9 @@ import numpy as np
 import torch
 import torch.optim as optim
 from torch.distributions import Normal
+
 from abc import ABCMeta, abstractmethod
-from buffer import ExpReplay
+from .buffer import ExpReplay
 from copy import deepcopy
 from collections import namedtuple
 
@@ -63,11 +64,11 @@ class DDPG(Algorithm):
         self.tau = 0.05
         self.gamma = disc_rate
         self.batch_size = batch_size
-        self.buffer = ExpReplay(10000, self.transition)
         self.transition = namedtuple(
             "Transition",
             ("state", "action", "logprobs", "reward", "next_state", "dones"),
         )
+        self.buffer = ExpReplay(10000, self.transition)
         self.noise_dist = Normal(torch.tensor([0.0]), torch.tensor([sigma]))
 
         # define actor and critic ANN.
