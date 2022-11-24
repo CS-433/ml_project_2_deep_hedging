@@ -1,0 +1,14 @@
+black
+gym
+ipykernel
+numpy
+pandas
+pyglet
+python-dateutil==2.8.2
+pytz==2021.1
+scipy
+scikit-learn
+statsmodels
+torch
+torchvision
+
