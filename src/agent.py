@@ -1,13 +1,11 @@
 import numpy as np
 import torch
 import torch.optim as optim
-
+from torch.distributions import Normal
 from abc import ABCMeta, abstractmethod
-from base import Algorithm
 from buffer import ExpReplay
 from copy import deepcopy
 from collections import namedtuple
-from torch.distributions import Normal
 
 
 class Algorithm(metaclass=ABCMeta):
