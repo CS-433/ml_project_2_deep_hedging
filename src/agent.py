@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 
+from abc import ABCMeta, abstractmethod
 from base import Algorithm
 from buffer import ExpReplay
 from copy import deepcopy
@@ -9,9 +10,44 @@ from collections import namedtuple
 from torch.distributions import Normal
 
 
+class Algorithm(metaclass=ABCMeta):
+    """
+    Author: Kibeom
+
+    Constructs an abstract based class Algorithm.
+    This will be the main bone of all Reinforcement Learning algorithms.
+    This class gives a clear structure of what needs to be implemented for all reinforcement algorithm in general.
+    If there is other extra methods to be specified, child class will inherit the existing methods as well as
+    add new methods to it.
+    """
+
+    def __init__(self, env, disc_rate, learning_rate):
+        self.env = env
+        self.gamma = disc_rate
+        self.lr = learning_rate
+
+    @abstractmethod
+    def act(self):
+        pass
+
+    @abstractmethod
+    def store(self):
+        pass
+
+    @abstractmethod
+    def reset(self):
+        pass
+
+    @abstractmethod
+    def update(self):
+        pass
+
+
 class DDPG(Algorithm):
     def __init__(self, env, Actor, Critic, learning_rate, disc_rate, sigma, batch_size):
         """
+        Author: Kibeom
+
         Need to write docstring
         :param env: openai gym environment.
         :param Net: neural network class from pytorch module.
