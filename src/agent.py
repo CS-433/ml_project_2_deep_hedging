@@ -43,7 +43,7 @@ class Algorithm(metaclass=ABCMeta):
 
 
 class DDPG(Algorithm):
-    def __init__(self, env, Actor, Critic, learning_rate, disc_rate, sigma, batch_size):
+    def __init__(self, Actor, Critic, learning_rate, disc_rate, sigma, batch_size):
         """
         Author: Kibeom
 
@@ -54,26 +54,19 @@ class DDPG(Algorithm):
         :param disc_rate: discount rate used to calculate return G
         """
 
-        # define parameters of DDPG
-        self.dim_in = env.observation_space.shape[0]
-        try:
-            self.dim_out = env.action_space.n
-        except:
-            self.dim_out = 1
-
         self.tau = 0.05
         self.gamma = disc_rate
         self.batch_size = batch_size
         self.transition = namedtuple(
             "Transition",
-            ("state", "action", "logprobs", "reward", "next_state", "dones"),
+            ("state", "action", "reward", "next_state", "done"),
         )
         self.buffer = ExpReplay(10000, self.transition)
         self.noise_dist = Normal(torch.tensor([0.0]), torch.tensor([sigma]))
 
         # define actor and critic ANN.
-        self.actor = Actor(self.dim_in, self.dim_out)
-        self.critic = Critic(self.dim_in)
+        self.actor  = Actor
+        self.critic = Critic
 
         # define optimizer for Actor and Critic network
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=learning_rate)
@@ -119,13 +112,15 @@ class DDPG(Algorithm):
         batch = self.transition(*zip(*transitions))
 
         # extract variables from sampled batch.
-        states = torch.tensor(batch.state).view(self.batch_size, self.dim_in)
-        actions = torch.tensor(batch.action).view(self.batch_size, 1)
-        rewards = torch.tensor(batch.reward).view(self.batch_size, 1)
-        dones = torch.tensor(batch.dones).view(self.batch_size, 1).long()
-        next_states = torch.tensor(batch.next_state).view(self.batch_size, self.dim_in)
+        
+        states = torch.tensor(batch.state)
+        actions = torch.tensor(batch.action)
+        rewards = torch.tensor(batch.reward)
+        dones = torch.tensor(batch.done).long()
+        next_states = torch.tensor(batch.next_state)
         next_actions = self.actor_target(next_states)
 
+        print(states.size(), actions.size(), rewards.size(), dones.size(),next_states.size(), next_actions.size())
         # compute target
         y = rewards + self.gamma * (1 - dones) * self.critic_target(
             torch.hstack((next_states, next_actions))

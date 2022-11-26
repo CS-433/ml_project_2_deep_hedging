@@ -1,6 +1,6 @@
-from collections import deque
 import random
-
+import numpy as np
+from collections import deque
 
 class ExpReplay:
     def __init__(self, capacity, transition):
@@ -12,7 +12,8 @@ class ExpReplay:
 
     def store(self, *args):
         """Save a transition"""
-        self.memory.append(self.record(*args))
+        record = self.record(*[item.tolist() if type(item) == np.ndarray else [item] for item in list(args)])
+        self.memory.append(record)
 
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
