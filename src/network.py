@@ -2,8 +2,10 @@ import torch.nn as nn
 
 
 class MLP(nn.Module):
-    def __init__(self, dim_in, dim_hidden, dim_out):
+    
+    def __init__(self, dim_in, dim_hidden, dim_out, activation='ReLU'):
         super(MLP, self).__init__()
+        activ_layers ={'ReLU': nn.ReLU, 'Sigmoid': nn.Sigmoid, 'Tanh': nn.Tanh}
         self.dim_in = dim_in
         self.dim_hidden = dim_hidden
         self.dim_out = dim_out
@@ -12,7 +14,7 @@ class MLP(nn.Module):
             nn.Linear(self.dim_in, self.dim_hidden),
             nn.ReLU(),
             nn.Linear(self.dim_hidden, self.dim_out),
-            nn.ReLU(),
+            activ_layers[activation](),
         )
 
     def forward(self, x):

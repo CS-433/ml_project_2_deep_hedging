@@ -43,7 +43,7 @@ class Algorithm(metaclass=ABCMeta):
 
 
 class DDPG(Algorithm):
-    def __init__(self, Actor, Critic, learning_rate, disc_rate, sigma, batch_size):
+    def __init__(self, Actor, Critic, actor_lr, critic_lr, disc_rate, batch_size):
         """
         Author: Kibeom
 
@@ -62,15 +62,14 @@ class DDPG(Algorithm):
             ("state", "action", "reward", "next_state", "done"),
         )
         self.buffer = ExpReplay(10000, self.transition)
-        self.noise_dist = Normal(torch.tensor([0.0]), torch.tensor([sigma]))
-
+        
         # define actor and critic ANN.
         self.actor  = Actor
         self.critic = Critic
 
         # define optimizer for Actor and Critic network
-        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=learning_rate)
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=learning_rate)
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=actor_lr)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=critic_lr)
 
         # define target network needed for DDPG optimization
         self.actor_target = deepcopy(self.actor)
@@ -82,7 +81,7 @@ class DDPG(Algorithm):
     def store(self, *args):
         self.buffer.store(*args)
 
-    def act(self, state):
+    def act(self, state, sigma=0.5):
         """
         We use policy function to find the deterministic action instead of distributions
         which is parametrized by distribution parameters learned from the policy.
@@ -92,16 +91,22 @@ class DDPG(Algorithm):
         :param state:
         :return:
         """
-        # we
         x = torch.tensor(state.astype(np.float32))
         action = self.actor.forward(x)
-        return torch.clip(action + self.noise_dist.sample(), -2.0, 2.0).detach().numpy()
+        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
+        return torch.clip(action + noise, -2.0, 2.0).detach().numpy()
 
-    def soft_update(self, target, source):
-        for target_param, param in zip(
-            list(target.parameters()), list(source.parameters())
+    def polyak_update(self):
+        # Update the frozen target models
+        for trg_param, src_param in zip(
+            list(self.critic_target.parameters()), list(self.critic.parameters())
         ):
-            target_param = target_param * (1.0 - self.tau) + param * self.tau
+            trg_param = trg_param * (1.0 - self.tau) + src_param * self.tau
+
+        for trg_param, src_param in zip(
+            list(self.actor_target.parameters()), list(self.actor.parameters())
+        ):
+            trg_param = trg_param * (1.0 - self.tau) + src_param * self.tau
 
     def update(self):
         # calculate return of all times in the episode
@@ -112,7 +117,6 @@ class DDPG(Algorithm):
         batch = self.transition(*zip(*transitions))
 
         # extract variables from sampled batch.
-        
         states = torch.tensor(batch.state)
         actions = torch.tensor(batch.action)
         rewards = torch.tensor(batch.reward)
@@ -120,7 +124,6 @@ class DDPG(Algorithm):
         next_states = torch.tensor(batch.next_state)
         next_actions = self.actor_target(next_states)
 
-        print(states.size(), actions.size(), rewards.size(), dones.size(),next_states.size(), next_actions.size())
         # compute target
         y = rewards + self.gamma * (1 - dones) * self.critic_target(
             torch.hstack((next_states, next_actions))
@@ -128,22 +131,18 @@ class DDPG(Algorithm):
         advantage = self.critic(torch.hstack([states, actions])) - y.detach()
         critic_loss = advantage.pow(2).mean()
 
-        # Get actor loss
-        actor_loss = -self.critic(torch.hstack([states, self.actor(states)])).mean()
-
         # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
 
+        # Get actor loss
+        actor_loss = -self.critic(torch.hstack([states, self.actor(states)])).mean()
+
         # Optimize the actor
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-
-        # Update the frozen target models
-        self.soft_update(self.critic_target, self.critic)
-        self.soft_update(self.actor_target, self.actor)
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
