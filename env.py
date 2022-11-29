@@ -46,10 +46,10 @@ class StockTradingEnv(gym.Env):
         self.current_step += 1
         if self.current_step > MAX_STEPS:  #  add reset and switch to new path?
             self.current_step = 0
-        
-        if self.reward_type == "CF":
+        # reward is Acc PnL by default (cf __init__ args) but if "CF" specified by user, this should be a CF formulation
+        if self.reward_type == "CF": 
             reward = APL_process(option_price[self.pathnumb,self.current_step], asset_price[self.pathnumb,self.current_step], action)
-        else: # needs a cash flow reward function, left APL for now
+        else: # default : acc PnL
             reward = APL_process(option_price[self.pathnumb,self.current_step], asset_price[self.pathnumb,self.current_step], action)
         #previous action + current asset price and time to maturity (H_i-1, S_i, tau_i)
         obs = [action, asset_price[self.pathnumb,self.current_step], 60-self.current_step] 
