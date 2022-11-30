@@ -13,3 +13,4 @@ ipython_config.py
 .venv
 env/
 venv/
+data

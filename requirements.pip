@@ -1,6 +1,7 @@
 black
 gym
 ipykernel
+matplotlib
 numpy
 pandas
 pyglet==1.5.27
@@ -10,5 +11,4 @@ scipy
 scikit-learn
 statsmodels
 torch
-torchvision
-
+tqdm
