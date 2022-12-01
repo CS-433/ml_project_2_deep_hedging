@@ -37,11 +37,11 @@ class StockTradingEnv(gym.Env):
         self.curr_step = 0
 
         # Actions of the format hold amount [0,1]
-        self.action_space = spaces.Box(low=0, high=1, dtype=np.float16)
+        self.action_space = spaces.Box(low=-1, high=1, dtype=np.float16)
 
         # agent is given previous action + current asset price and time to maturity (H_i-1, S_i, tau_i)
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0]),
+            low=np.array([-1, 0, 0]),
             high=np.array([1, np.inf, self.nSteps]),
             shape=(3,),
             dtype=np.float16,
@@ -72,11 +72,11 @@ class StockTradingEnv(gym.Env):
             c_next
             - c_now
             + self.holdings * (s_next - s_now)
-            - 0.05 * np.abs(s_next * (action - self.holdings))
+            - 0.05 * np.abs(s_next * action)
         )
 
         # A_{t}: update the holding info.
-        self.holdings = action
+        self.holdings += action
 
         # done: whether the episode is ended or not
         done = True if self.curr_step + 1 >= self.nSteps else False
