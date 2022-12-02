@@ -55,15 +55,7 @@ class StockTradingEnv(gym.Env):
             self.asset_price[self.path_idx, self.curr_step - 1],
         )
 
-        # S_{t+1}: previous action, current asset price and time to maturity (H_i-1, S_i, tau_i)
-        next_state = [
-            self.holdings,
-            s_next,
-            self.nSteps - self.curr_step,
-        ]
-
-        # R_{t} is Acc PnL by default (cf __init__ args)
-        # -> Marcell we need APL_process function to take only float inputs.
+        # R_{t} is Acc PnL 
         reward = (
             c_next
             - c_now
@@ -74,6 +66,12 @@ class StockTradingEnv(gym.Env):
         # A_{t}: update the holding info.
         self.holdings += action
 
+        # S_{t+1}: previous action, current asset price and time to maturity (H_i-1, S_i, tau_i)
+        next_state = [
+            self.holdings,
+            s_next,
+            self.nSteps - self.curr_step,
+        ]
         # done: whether the episode is ended or not
         done = True if self.curr_step + 1 >= self.nSteps else False
         return next_state, reward, done

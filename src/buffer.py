@@ -18,7 +18,7 @@ class ExpReplay:
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
 
-    def all(self):
+    def _all(self):
         return list(self.memory)
 
     def clear(self):
