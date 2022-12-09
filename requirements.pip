@@ -1,5 +1,6 @@
 black
 gym
+gym[classic_control]
 ipykernel
 matplotlib
 numpy
