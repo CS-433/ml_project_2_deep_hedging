@@ -20,10 +20,12 @@ SRC_UPDATE = 5
 TRG_UPDATE = 20
 
 env = gym.make("Pendulum-v1", render_mode="human")
-# env.seed(100)
 
+nHidden = 10
 nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
-actor, critic = MLP(nState, 4, nAction, "Tanh"), MLP(nState + nAction, 4, nAction)
+actor, critic = MLP(nState, nHidden, nAction, "Tanh"), MLP(
+    nState + nAction, nHidden, nAction
+)
 agent = DDPG(actor, critic, 1e-3, 1e-4, DISC_RATE, BATCH_SIZE)
 
 if __name__ == "__main__":

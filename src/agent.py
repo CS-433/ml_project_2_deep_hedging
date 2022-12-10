@@ -11,14 +11,14 @@ from .buffer import ExpReplay
 
 class DDPG:
     def __init__(
-        self, 
-        Actor:nn.Module, 
-        Critic:nn.Module, 
-        actor_lr:float, 
-        critic_lr:float, 
-        disc_rate:float=0.99, 
-        batch_size:int=64
-        ):
+        self,
+        Actor: nn.Module,
+        Critic: nn.Module,
+        actor_lr: float,
+        critic_lr: float,
+        disc_rate: float = 1.00,
+        batch_size: int = 64,
+    ):
 
         """
         Author: Kibeom
@@ -33,21 +33,21 @@ class DDPG:
         self.gamma = disc_rate
         self.tau = 0.05
         self.batch_size = batch_size
-        
+
         # experience replay related
         self.transition = namedtuple(
             "Transition",
             ("state", "action", "reward", "next_state", "done"),
         )
         self.buffer = ExpReplay(10000, self.transition)
-        
+
         # define actor and critic ANN.
-        self.actor  = Actor
+        self.actor = Actor
         self.critic = Critic
 
         # loss function for critic
         self.critic_loss = nn.MSELoss()
-        
+
         # define optimizer for Actor and Critic network
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=critic_lr)
@@ -62,7 +62,7 @@ class DDPG:
     def store(self, *args):
         self.buffer.store(*args)
 
-    def act(self, state:list, sigma:float=0.5):
+    def act(self, state: list, sigma: float = 0.5):
         """
         We use policy function to find the deterministic action instead of distributions
         which is parametrized by distribution parameters learned from the policy.
@@ -91,7 +91,7 @@ class DDPG:
         rewards = torch.tensor(batch.reward)
         dones = torch.tensor(batch.done).long()
         next_states = torch.tensor(batch.next_state)
-        
+
         # compute critic loss
         Q = self.critic(torch.hstack([states, actions]))
         y = rewards + self.gamma * (1 - dones) * self.critic_target(
@@ -111,7 +111,7 @@ class DDPG:
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        
+
         # update target net
         self.polyak_update()
 
@@ -146,3 +146,114 @@ class DDPG:
         # define target network needed for DDPG optimization
         self.actor_target = deepcopy(self.actor)
         self.critic_target = deepcopy(self.critic)
+
+
+class DDPG_Hedger(DDPG):
+    def __init__(
+        self,
+        Actor: nn.Module,
+        Critic: nn.Module,
+        actor_lr: float,
+        critic_lr: float,
+        disc_rate: float = 0.99,
+        batch_size: int = 64,
+    ):
+        super(DDPG, self).__init__(
+            Actor, Critic, actor_lr, critic_lr, disc_rate, batch_size
+        )
+
+        # define actor and critic ANN.
+        self.actor = Actor
+        self.critic_1 = Critic  # mean(cost)
+        self.critic_2 = Critic  # std(cost)
+
+        # define optimizer for Actor and Critic network
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=actor_lr)
+        self.critic_1_optimizer = optim.Adam(self.critic_1.parameters(), lr=critic_lr)
+        self.critic_2_optimizer = optim.Adam(self.critic_2.parameters(), lr=critic_lr)
+
+        # define target network needed for DDPG optimization
+        self.actor_target = deepcopy(self.actor)
+        self.critic_1_target = deepcopy(self.critic_1)
+        self.critic_2_target = deepcopy(self.critic_2)
+
+    def act(self, state: list, sigma: float = 0.2):
+        """
+        We use policy function to find the deterministic action instead of distributions
+        which is parametrized by distribution parameters learned from the policy.
+
+        Here, state input prompts policy network to output a single or multiple-dim
+        actions.
+        :param state:
+        :return:
+        """
+        x = torch.tensor(state)
+        action = self.actor.forward(x)
+        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
+        return torch.clip(action + noise, -state[0], 1 - state[0]).detach().numpy()
+
+    def update(self):
+        # calculate return of all times in the episode
+        if self.buffer.len() < self.batch_size:
+            return
+
+        transitions = self.buffer.sample(self.batch_size)
+        batch = self.transition(*zip(*transitions))
+
+        # extract variables from sampled batch.
+        states = torch.tensor(batch.state)
+        actions = torch.tensor(batch.action)
+        rewards = torch.tensor(batch.reward)
+        dones = torch.tensor(batch.done).long()
+        next_states = torch.tensor(batch.next_state)
+
+        # compute Q_1 loss
+        Q_1 = self.critic_1(torch.hstack([states, actions]))
+        y_1 = rewards + self.gamma * (1 - dones) * self.critic_1_target(
+            torch.hstack((next_states, self.actor_target(next_states)).detach())
+        )
+        critic_loss_1 = self.critic_loss(Q_1, y_1)
+
+        # Optimize the critic Q_1
+        self.critic_1_optimizer.zero_grad()
+        critic_loss_1.backward()
+        self.critic_1_optimizer.step()
+
+        # compute Q_2 loss
+        Q_2 = self.critic_2(torch.hstack([states, actions]))
+        y_2 = (
+            rewards**2
+            + (self.gamma**2)
+            * (1 - dones)
+            * self.critic_2_target(
+                torch.hstack((next_states, self.actor_target(next_states)).detach())
+            )
+            + 2
+            * self.gamma
+            * rewards
+            * self.critic_1_target(
+                torch.hstack((next_states, self.actor_target(next_states)).detach())
+            )
+        )
+        critic_loss_2 = self.critic_loss(Q_2, y_2)
+
+        # Optimize the critic Q_2
+        self.critic_2_optimizer.zero_grad()
+        critic_loss_2.backward()
+        self.critic_2_optimizer.step()
+
+        # Get actor loss
+        actor_loss = (self.critic_1(
+            torch.hstack([states, self.actor(states)])
+        ) + 1.5 * torch.sqrt(
+            self.critic_2(torch.hstack([states, self.actor(states)]))
+            - self.critic_2(torch.hstack([states, self.actor(states)])) ** 2
+        )).mean()
+
+        # Optimize the actor
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
+
+        # update target net
+        self.polyak_update()
