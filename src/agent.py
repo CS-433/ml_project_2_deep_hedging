@@ -99,13 +99,13 @@ class DDPG:
         )
         critic_loss = self.critic_loss(Q, y)
 
-        # Get actor loss
-        actor_loss = -self.critic(torch.hstack([states, self.actor(states)])).mean()
-
         # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
+
+        # Get actor loss
+        actor_loss = -self.critic(torch.hstack([states, self.actor(states)])).mean()
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
