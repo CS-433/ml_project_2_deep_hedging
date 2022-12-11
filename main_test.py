@@ -4,33 +4,33 @@ import argparse
 import torch
 import numpy as np
 
-from gym import envs
+from gym import wrappers
 from src.agent import DDPG
 from src.network import MLP
 from src.utils import NetkwargAction
+
 
 ###############################################
 ############# Parameter Setting ###############
 ###############################################
 
-BATCH_SIZE = 100
-N_EPISODE = 10000
+BATCH_SIZE = 32
+N_EPISODE = 1000
 DISC_RATE = 0.99
-SRC_UPDATE = 5
-TRG_UPDATE = 20
+TRG_UPDATE = 100
 
-env = gym.make("Pendulum-v1", render_mode="human")
+env = gym.make("Pendulum-v1")
 
-nHidden = 10
+nHidden = 8
 nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
-actor, critic = MLP(nState, nHidden, nAction, "Tanh"), MLP(
-    nState + nAction, nHidden, nAction
-)
+actor = MLP(nState, nHidden, nAction, "Tanh")
+critic = MLP(nState + nAction, nHidden, nAction)
+
 agent = DDPG(actor, critic, 1e-3, 1e-4, DISC_RATE, BATCH_SIZE)
 
 if __name__ == "__main__":
 
-    mean_rewards, episode_rewards = [], []
+    episode_rewards = []
     for episode in range(N_EPISODE):
         # reset state
         state, _ = env.reset()  # s_0
@@ -45,20 +45,17 @@ if __name__ == "__main__":
 
             # record interaction between environment and the agent
             agent.store(state, action, reward, next_state, done)
-            env.render()
+            # env.render()
 
             total_reward += reward
             state = next_state
+            agent.update()
 
             if done:
                 break
-        episode_rewards.append(total_reward)
 
-        if episode % SRC_UPDATE == 0:  # update target network
-            agent.update()
+        episode_rewards.append(total_reward)
+        print(f"Episode Num {episode}, total_reward = {total_reward}")
 
         if episode % TRG_UPDATE == 0:  # update target network
             agent.polyak_update()
-            mean_reward = np.mean(episode_rewards)
-            mean_rewards.append(mean_reward)
-            print(f"Episode Batch {episode//10}: {mean_reward}")

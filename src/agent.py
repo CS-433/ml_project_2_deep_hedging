@@ -2,11 +2,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.distributions import Normal
 
+from .buffer import ExpReplay
 from copy import deepcopy
 from collections import namedtuple
-from .buffer import ExpReplay
+from torch.distributions import Normal
 
 
 class DDPG:
@@ -88,15 +88,20 @@ class DDPG:
         # extract variables from sampled batch.
         states = torch.tensor(batch.state)
         actions = torch.tensor(batch.action)
-        rewards = torch.tensor(batch.reward)
-        dones = torch.tensor(batch.done).long()
+        rewards = torch.tensor(batch.reward).float()
+        dones = torch.tensor(batch.done).float()
         next_states = torch.tensor(batch.next_state)
 
         # compute critic loss
         Q = self.critic(torch.hstack([states, actions]))
-        y = rewards + self.gamma * (1 - dones) * self.critic_target(
-            torch.hstack((next_states, self.actor_target(next_states)).detach())
-        )
+        y = (
+            rewards
+            + self.gamma
+            * (1 - dones)
+            * self.critic_target(
+                torch.hstack([next_states, self.actor_target(next_states)])
+            )
+        ).detach()
         critic_loss = self.critic_loss(Q, y)
 
         # Optimize the critic
@@ -243,12 +248,14 @@ class DDPG_Hedger(DDPG):
         self.critic_2_optimizer.step()
 
         # Get actor loss
-        actor_loss = (self.critic_1(
-            torch.hstack([states, self.actor(states)])
-        ) + 1.5 * torch.sqrt(
-            self.critic_2(torch.hstack([states, self.actor(states)]))
-            - self.critic_2(torch.hstack([states, self.actor(states)])) ** 2
-        )).mean()
+        actor_loss = (
+            self.critic_1(torch.hstack([states, self.actor(states)]))
+            + 1.5
+            * torch.sqrt(
+                self.critic_2(torch.hstack([states, self.actor(states)]))
+                - self.critic_2(torch.hstack([states, self.actor(states)])) ** 2
+            )
+        ).mean()
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
