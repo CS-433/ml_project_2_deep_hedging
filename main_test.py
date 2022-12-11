@@ -17,7 +17,7 @@ from src.utils import NetkwargAction
 BATCH_SIZE = 32
 N_EPISODE = 1000
 DISC_RATE = 0.99
-TRG_UPDATE = 100
+TRG_UPDATE = 10
 
 env = gym.make("Pendulum-v1")
 
@@ -26,7 +26,9 @@ nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3
 actor = MLP(nState, nHidden, nAction, "Tanh")
 critic = MLP(nState + nAction, nHidden, nAction)
 
-agent = DDPG(actor, critic, 1e-3, 1e-4, DISC_RATE, BATCH_SIZE)
+agent = DDPG(actor, critic, 1e-4, 1e-4, DISC_RATE, BATCH_SIZE)
+noise_std = 0.5
+noise_step = noise_std / N_EPISODE
 
 if __name__ == "__main__":
 
@@ -36,10 +38,11 @@ if __name__ == "__main__":
         state, _ = env.reset()  # s_0
         total_reward = 0
 
-        while True:
+        i = 0
+        while i < 200:
             # take action given state
-            action = agent.act(state, 0.5)
-
+            action = agent.act(state, noise_std)
+            # print(action)
             # take next step of the environment
             next_state, reward, done, _, _ = env.step(action)
 
@@ -51,9 +54,11 @@ if __name__ == "__main__":
             state = next_state
             agent.update()
 
+            i += 1
             if done:
                 break
 
+        noise_std -= noise_step
         episode_rewards.append(total_reward)
         print(f"Episode Num {episode}, total_reward = {total_reward}")
 

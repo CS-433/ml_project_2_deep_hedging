@@ -73,7 +73,7 @@ class DDPG:
         :return:
         """
         x = torch.tensor(state.astype(np.float32))
-        action = self.actor.forward(x)
+        action = self.actor.forward(x) * 2
         noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
         return torch.clip(action + noise, -2.0, 2.0).detach().numpy()
 
