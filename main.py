@@ -96,14 +96,14 @@ from src.utils import NetkwargAction
 if __name__ == "__main__":
     BATCH_SIZE = 32
     N_EPISODE = 1000
-    DISC_RATE = 0.99
-    TRG_UPDATE = 100
+    DISC_RATE = 1
+    TRG_UPDATE = 10
 
-    env = StockTradingEnv(reset_path=True)
+    env = StockTradingEnv(reset_path=False)
 
     nHidden = 8
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
-    actor = MLP(nState, nHidden, nAction, "Tanh")
+    actor = MLP(nState, nHidden, nAction, "Swish", "Tanh")
     critic = MLP(nState + nAction, nHidden, nAction)
 
     agent = DDPG_Hedger(actor, critic, 1e-3, 1e-4, DISC_RATE, BATCH_SIZE)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         # reset state
         state = env.reset()  # s_0
         total_reward = 0
-
+        i = 1
         while True:
             # take action given state
             action = agent.act(state, 0.5)
@@ -123,15 +123,16 @@ if __name__ == "__main__":
 
             # record interaction between environment and the agent
             agent.store(state, action, reward, next_state, done)
-            # env.render()
+            #print(f'step {i} - reward: {reward[0]}, action: {action[0]}, state: {state}')
 
-            total_reward += reward
+            total_reward -= reward
             state = next_state
             agent.update()
-
+            i += 1
+            
             if done:
                 break
-
+        
         episode_rewards.append(total_reward)
         print(f"Episode Num {episode}, total_reward = {total_reward}")
 

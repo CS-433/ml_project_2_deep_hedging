@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from .buffer import ExpReplay
+from buffer import ExpReplay
 from copy import deepcopy
 from collections import namedtuple
 from torch.distributions import Normal
@@ -194,10 +194,10 @@ class DDPG_Hedger(DDPG):
         """
         x = torch.tensor(state).to(torch.float64)
         action = self.actor.forward(x)
-        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
-        return torch.clip(action + noise, -state[0], 1 - state[0]).detach().numpy()
+        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample().item()
+        return torch.clip(action + noise, -state[0], 1.0 - state[0]).detach().numpy()
 
-    def update(self):
+    def update(self, output=False):
         # calculate return of all times in the episode
         if self.buffer.len() < self.batch_size:
             return
@@ -240,26 +240,25 @@ class DDPG_Hedger(DDPG):
             )
         
         critic_loss_2 = self.critic_loss(Q_2, y_2)
-
+        
         # Optimize the critic Q_2
         self.critic_2_optimizer.zero_grad()
         critic_loss_2.backward()
         self.critic_2_optimizer.step()
 
         # Get actor loss
+        cost_variance = self.critic_2(torch.hstack([states, self.actor(states)])) \
+                - self.critic_1(torch.hstack([states, self.actor(states)])) ** 2
         actor_loss = (
             self.critic_1(torch.hstack([states, self.actor(states)]))
-            + 1.5
-            * torch.sqrt(
-                self.critic_2(torch.hstack([states, self.actor(states)]))
-                - self.critic_2(torch.hstack([states, self.actor(states)])) ** 2
-            )
+            + 1.5 * torch.sqrt(torch.where(cost_variance < 0, 0, cost_variance))
         ).mean()
-
+        
         # Optimize the actor
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
 
-        # update target net
-        self.polyak_update()
+        if output:
+            return actor_loss.detach().item()
+        

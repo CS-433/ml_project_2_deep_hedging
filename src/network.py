@@ -5,18 +5,18 @@ torch.set_default_dtype(torch.float64)
 
 class MLP(nn.Module):
     
-    def __init__(self, dim_in, dim_hidden, dim_out, activation='ReLU'):
+    def __init__(self, dim_in, dim_hidden, dim_out, hidden_activ='ReLU', output_activ='ReLU'):
         super(MLP, self).__init__()
-        activ_layers ={'ReLU': nn.ReLU, 'Sigmoid': nn.Sigmoid, 'Tanh': nn.Tanh}
+        activ_layers ={'ReLU': nn.ReLU, 'Sigmoid': nn.Sigmoid, 'Tanh': nn.Tanh, 'Swish':nn.SiLU}
         self.dim_in = dim_in
         self.dim_hidden = dim_hidden
         self.dim_out = dim_out
 
         self.model = nn.Sequential(
             nn.Linear(self.dim_in, self.dim_hidden),
-            nn.ReLU(),
+            activ_layers[hidden_activ](),
             nn.Linear(self.dim_hidden, self.dim_out),
-            activ_layers[activation](),
+            activ_layers[output_activ](),
         )
 
     def forward(self, x):

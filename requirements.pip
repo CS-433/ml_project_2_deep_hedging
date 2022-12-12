@@ -4,6 +4,7 @@ gym[classic_control]
 ipykernel
 matplotlib
 numpy
+optuna
 pandas
 pyglet==1.5.27
 python-dateutil==2.8.2

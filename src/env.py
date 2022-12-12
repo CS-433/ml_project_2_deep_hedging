@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 # from tqdm import tqdm
 from gym import spaces
-from src.simulation import APL_process
+from simulation import APL_process
 
 
 class StockTradingEnv(gym.Env):
