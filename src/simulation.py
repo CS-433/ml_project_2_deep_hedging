@@ -29,7 +29,6 @@ np.random.seed(100)
 
 # ## Simulation
 
-
 def CallBS(t, T, K, S, r, q, sigma): #[DONE]
     '''
     Calculates the price and the delta of a call option using the Black-Scholes formula.

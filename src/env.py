@@ -68,7 +68,7 @@ class StockTradingEnv(gym.Env):
 
         # S_{t+1}: previous action, current asset price and time to maturity (H_i-1, S_i, tau_i)
         next_state = [
-            self.holdings,
+            self.holdings.item(),
             s_next,
             self.nSteps - self.curr_step,
         ]

@@ -160,10 +160,10 @@ class DDPG_Hedger(DDPG):
         Critic: nn.Module,
         actor_lr: float,
         critic_lr: float,
-        disc_rate: float = 0.99,
-        batch_size: int = 64,
+        disc_rate: float = 1,
+        batch_size: int = 32,
     ):
-        super(DDPG, self).__init__(
+        super().__init__(
             Actor, Critic, actor_lr, critic_lr, disc_rate, batch_size
         )
 
@@ -192,7 +192,7 @@ class DDPG_Hedger(DDPG):
         :param state:
         :return:
         """
-        x = torch.tensor(state)
+        x = torch.tensor(state).float()
         action = self.actor.forward(x)
         noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
         return torch.clip(action + noise, -state[0], 1 - state[0]).detach().numpy()
