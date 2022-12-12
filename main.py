@@ -121,7 +121,6 @@ if __name__ == "__main__":
             # take next step of the environment
             next_state, reward, done = env.step(action)
 
-            print(state, action, next_state, reward, done)
             # record interaction between environment and the agent
             agent.store(state, action, reward, next_state, done)
             # env.render()

@@ -12,7 +12,7 @@ class ExpReplay:
 
     def store(self, *args):
         """Save a transition"""
-        record = self.record(*[item.tolist() if type(item) == np.ndarray else [item] for item in list(args)])
+        record = self.record(*[item.tolist() if type(item) == np.ndarray else item if type(item) == list else [item] for item in list(args)])
         self.memory.append(record)
 
     def sample(self, batch_size):

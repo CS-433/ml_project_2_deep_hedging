@@ -192,7 +192,7 @@ class DDPG_Hedger(DDPG):
         :param state:
         :return:
         """
-        x = torch.tensor(state).float()
+        x = torch.tensor(state).to(torch.float64)
         action = self.actor.forward(x)
         noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
         return torch.clip(action + noise, -state[0], 1 - state[0]).detach().numpy()
@@ -209,14 +209,14 @@ class DDPG_Hedger(DDPG):
         states = torch.tensor(batch.state)
         actions = torch.tensor(batch.action)
         rewards = torch.tensor(batch.reward)
-        dones = torch.tensor(batch.done).long()
+        dones = torch.tensor(batch.done).float()
         next_states = torch.tensor(batch.next_state)
 
         # compute Q_1 loss
         Q_1 = self.critic_1(torch.hstack([states, actions]))
         y_1 = rewards + self.gamma * (1 - dones) * self.critic_1_target(
-            torch.hstack((next_states, self.actor_target(next_states)).detach())
-        )
+            torch.hstack([next_states, self.actor_target(next_states)]).detach())
+    
         critic_loss_1 = self.critic_loss(Q_1, y_1)
 
         # Optimize the critic Q_1
@@ -231,15 +231,14 @@ class DDPG_Hedger(DDPG):
             + (self.gamma**2)
             * (1 - dones)
             * self.critic_2_target(
-                torch.hstack((next_states, self.actor_target(next_states)).detach())
-            )
+                torch.hstack([next_states, self.actor_target(next_states)]).detach())
             + 2
             * self.gamma
             * rewards
             * self.critic_1_target(
-                torch.hstack((next_states, self.actor_target(next_states)).detach())
+                torch.hstack([next_states, self.actor_target(next_states)]).detach())
             )
-        )
+        
         critic_loss_2 = self.critic_loss(Q_2, y_2)
 
         # Optimize the critic Q_2
