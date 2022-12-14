@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from .buffer import ExpReplay
+from src.buffer import ExpReplay
 from copy import deepcopy
 from collections import namedtuple
 from torch.distributions import Normal
@@ -160,12 +160,10 @@ class DDPG_Hedger(DDPG):
         Critic: nn.Module,
         actor_lr: float,
         critic_lr: float,
-        disc_rate: float = 0.99,
-        batch_size: int = 64,
+        disc_rate: float = 1,
+        batch_size: int = 32,
     ):
-        super(DDPG, self).__init__(
-            Actor, Critic, actor_lr, critic_lr, disc_rate, batch_size
-        )
+        super().__init__(Actor, Critic, actor_lr, critic_lr, disc_rate, batch_size)
 
         # define actor and critic ANN.
         self.actor = Actor
@@ -192,12 +190,16 @@ class DDPG_Hedger(DDPG):
         :param state:
         :return:
         """
-        x = torch.tensor(state)
+        x = torch.tensor(state).to(torch.float64)
         action = self.actor.forward(x)
-        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample()
-        return torch.clip(action + noise, -state[0], 1 - state[0]).detach().numpy()
+        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample().item()
+        return (
+            torch.clip((action - 0.5) * 2 + noise, -state[0], 1.0 - state[0])
+            .detach()
+            .numpy()
+        )
 
-    def update(self):
+    def update(self, output=False):
         # calculate return of all times in the episode
         if self.buffer.len() < self.batch_size:
             return
@@ -209,14 +211,15 @@ class DDPG_Hedger(DDPG):
         states = torch.tensor(batch.state)
         actions = torch.tensor(batch.action)
         rewards = torch.tensor(batch.reward)
-        dones = torch.tensor(batch.done).long()
+        dones = torch.tensor(batch.done).float()
         next_states = torch.tensor(batch.next_state)
 
         # compute Q_1 loss
         Q_1 = self.critic_1(torch.hstack([states, actions]))
         y_1 = rewards + self.gamma * (1 - dones) * self.critic_1_target(
-            torch.hstack((next_states, self.actor_target(next_states)).detach())
+            torch.hstack([next_states, self.actor_target(next_states)]).detach()
         )
+
         critic_loss_1 = self.critic_loss(Q_1, y_1)
 
         # Optimize the critic Q_1
@@ -231,15 +234,16 @@ class DDPG_Hedger(DDPG):
             + (self.gamma**2)
             * (1 - dones)
             * self.critic_2_target(
-                torch.hstack((next_states, self.actor_target(next_states)).detach())
+                torch.hstack([next_states, self.actor_target(next_states)]).detach()
             )
             + 2
             * self.gamma
             * rewards
             * self.critic_1_target(
-                torch.hstack((next_states, self.actor_target(next_states)).detach())
+                torch.hstack([next_states, self.actor_target(next_states)]).detach()
             )
         )
+
         critic_loss_2 = self.critic_loss(Q_2, y_2)
 
         # Optimize the critic Q_2
@@ -248,13 +252,13 @@ class DDPG_Hedger(DDPG):
         self.critic_2_optimizer.step()
 
         # Get actor loss
+        cost_variance = (
+            self.critic_2(torch.hstack([states, self.actor(states)]))
+            - self.critic_1(torch.hstack([states, self.actor(states)])) ** 2
+        )
         actor_loss = (
             self.critic_1(torch.hstack([states, self.actor(states)]))
-            + 1.5
-            * torch.sqrt(
-                self.critic_2(torch.hstack([states, self.actor(states)]))
-                - self.critic_2(torch.hstack([states, self.actor(states)])) ** 2
-            )
+            + 1.5 * torch.sqrt(torch.where(cost_variance < 0, 0, cost_variance))
         ).mean()
 
         # Optimize the actor
@@ -262,5 +266,5 @@ class DDPG_Hedger(DDPG):
         actor_loss.backward()
         self.actor_optimizer.step()
 
-        # update target net
-        self.polyak_update()
+        if output:
+            return actor_loss.detach().item()

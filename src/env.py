@@ -18,7 +18,7 @@ class StockTradingEnv(gym.Env):
         self.option_price = pd.read_csv(f"data/option_price_{data_type}_sim.csv").values
         self.nPaths = self.option_price.shape[0]
         self.nSteps = self.option_price.shape[1]
-    
+
         # user-defined options (path)
         self.reset_path = reset_path
         self.path_choice = int(random.uniform(0, self.nPaths))
@@ -27,7 +27,7 @@ class StockTradingEnv(gym.Env):
         # user-defined options (rewards)
         self.reward_func = APL_process
         self.kappa = 0.0001
-        
+
         # initializing underlying amount
         self.holdings = 0
         self.curr_step = 0
@@ -55,7 +55,7 @@ class StockTradingEnv(gym.Env):
             self.asset_price[self.path_idx, self.curr_step - 1],
         )
 
-        # R_{t} is Acc PnL 
+        # R_{t} is Acc PnL
         reward = (
             c_next
             - c_now
@@ -68,7 +68,7 @@ class StockTradingEnv(gym.Env):
 
         # S_{t+1}: previous action, current asset price and time to maturity (H_i-1, S_i, tau_i)
         next_state = [
-            self.holdings,
+            self.holdings.item(),
             s_next,
             self.nSteps - self.curr_step,
         ]
@@ -87,4 +87,4 @@ class StockTradingEnv(gym.Env):
             self.holdings,
             self.asset_price[self.path_idx, self.curr_step],
             self.nSteps,
-          ]  # state0 of new path
+        ]  # state0 of new path
