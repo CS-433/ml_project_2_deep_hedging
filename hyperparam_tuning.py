@@ -20,11 +20,12 @@ def objective(trial):
 
     # define environment and the agent
     env = StockTradingEnv(reset_path=True)
-
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
-    actor = MLP(nState, nHidden, nAction, "ReLU", "Sigmoid")
-    critic = MLP(nState + nAction, nHidden, nAction)
-    agent = DDPG_Hedger(actor, critic, actor_lr, critic_lr, 1, BATCH_SIZE)
+
+    actor = MLP(nState, nHidden, nAction, "Sigmoid")
+    qnet_1 = MLP(nState + nAction, nHidden, nAction, "")
+    qnet_2 = MLP(nState + nAction, nHidden, nAction, "")
+    agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
     noise_std = 0.5

@@ -3,41 +3,32 @@ import torch.nn as nn
 
 torch.set_default_dtype(torch.float64)
 
+
 class MLP(nn.Module):
-    
-    def __init__(self, dim_in, dim_hidden, dim_out, hidden_activ='ReLU', output_activ='ReLU'):
+    def __init__(self, dim_in, dim_hidden, dim_out, activation_name="ReLU"):
         super(MLP, self).__init__()
-        activ_layers ={'ReLU': nn.ReLU, 'Sigmoid': nn.Sigmoid, 'Tanh': nn.Tanh, 'Swish':nn.SiLU}
         self.dim_in = dim_in
         self.dim_hidden = dim_hidden
         self.dim_out = dim_out
 
         self.model = nn.Sequential(
             nn.Linear(self.dim_in, self.dim_hidden),
-            activ_layers[hidden_activ](),
-            nn.Linear(self.dim_hidden, self.dim_out),
-            activ_layers[output_activ](),
-        )
-
-    def forward(self, x):
-        return self.model(x)
-
-
-class CNN(nn.Module):
-    def __init__(
-        self, dim_in, dim_hidden, dim_out, kernel=2, stride=1, dropout: float = 0.1
-    ):
-        super(CNN, self).__init__()
-
-        self.model = nn.Sequential(
-            nn.Conv2d(
-                3,
-                2,
-            ),
             nn.ReLU(),
-            nn.Linear(64, dim_out),
-            nn.Softmax(dim=0),
+            nn.LayerNorm(self.dim_hidden, elementwise_affine=True),
+            nn.Linear(self.dim_hidden, self.dim_hidden * 2),
+            nn.ReLU(),
+            nn.LayerNorm(self.dim_hidden * 2, elementwise_affine=True),
+            nn.Linear(self.dim_hidden * 2, self.dim_out),
         )
 
+        self.activ_layers = {"ReLU": nn.ReLU, "Sigmoid": nn.Sigmoid, "Tanh": nn.Tanh}
+        self.activation_name = activation_name
+
     def forward(self, x):
-        return self.model(x)
+        output = self.model(x)
+        if self.activation_name not in self.activ_layers.keys():
+            pass
+        else:
+            final_activ_func = self.activ_layers[self.activation_name]()
+            output = final_activ_func(output)
+        return output
