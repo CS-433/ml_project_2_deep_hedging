@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from buffer import ExpReplay
+from src.buffer import ExpReplay
 from copy import deepcopy
 from collections import namedtuple
 from torch.distributions import Normal
