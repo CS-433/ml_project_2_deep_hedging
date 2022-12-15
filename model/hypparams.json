@@ -1,1 +1,1 @@
-{"critic_lr": -1.786812112872882, "actor_lr": -1.6305091066521018, "hidden_dim": 13, "polyak_update_freq": 37}
+{"critic_lr": -4.0229307760593205, "actor_lr": -1.0853761494880982, "hidden_dim": 26, "polyak_update_freq": 9}

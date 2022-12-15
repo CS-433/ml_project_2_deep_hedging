@@ -6,8 +6,8 @@ from src.env import StockTradingEnv
 from src.agent import DDPG_Hedger
 from src.network import MLP
 
-BATCH_SIZE = 16
-N_EPISODE = 200
+BATCH_SIZE = 32
+N_EPISODE = 500
 
 
 def objective(trial):
@@ -15,8 +15,8 @@ def objective(trial):
     # set optuna param range
     critic_lr = 10 ** trial.suggest_float("critic_lr", -6, -1)
     actor_lr = 10 ** trial.suggest_float("actor_lr", -6, -1)
-    nHidden = trial.suggest_int("hidden_dim", 2, 32)
-    trg_update = trial.suggest_int("polyak_update_freq", 5, 40)
+    nHidden = trial.suggest_int("hidden_dim", 4, 32)
+    trg_update = trial.suggest_int("polyak_update_freq", 5, 20)
 
     # define environment and the agent
     env = StockTradingEnv(reset_path=True)
@@ -28,15 +28,12 @@ def objective(trial):
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
-    noise_std = 0.5
+    noise_std = 1
 
     for episode in range(N_EPISODE):
         # reset state
         state = env.reset()  # s_0
         ep_tot_reward = 0
-
-        if episode > N_EPISODE - 20:
-            noise_std = 0.0001
 
         while True:
             # take action given state
@@ -62,6 +59,8 @@ def objective(trial):
 
         if episode % trg_update == 0:  # update target network
             agent.polyak_update()
+
+        noise_std -= 0.0001
 
     return np.mean(target_rewards)
 

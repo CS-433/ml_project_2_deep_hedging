@@ -11,7 +11,7 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 
 if __name__ == "__main__":
     BATCH_SIZE = 16
-    N_EPISODE = 2000
+    N_EPISODE = 10000
     DISC_RATE = 1
 
     with open("model/hypparams.json", "r") as file:
@@ -25,21 +25,18 @@ if __name__ == "__main__":
     trg_update = hyp_params["polyak_update_freq"]
 
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
-    actor = MLP(nState, nHidden, nAction, "ReLU", "Sigmoid")
-    critic = MLP(nState + nAction, nHidden, nAction)
-
-    agent = DDPG_Hedger(actor, critic, actor_lr, critic_lr, DISC_RATE, BATCH_SIZE)
+    actor = MLP(nState, nHidden, nAction, "Sigmoid")
+    qnet_1 = MLP(nState + nAction, nHidden, nAction, "")
+    qnet_2 = MLP(nState + nAction, nHidden, nAction, "")
+    agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
-    noise_std = 0.5
+    noise_std = 1
 
     for episode in range(N_EPISODE):
         # reset state
         state = env.reset()  # s_0
         ep_tot_reward = 0
-
-        if episode > N_EPISODE - 30:
-            noise_std = 0.0001
 
         while True:
             # take action given state
@@ -57,7 +54,9 @@ if __name__ == "__main__":
 
             if done:
                 break
-            
+
+        noise_std -= 0.0001
+
         print(f"Episode {episode} Reward: {ep_tot_reward}")
         # store total rewards after some training is done
         # we only consider alst 10 total rewards as a quantity to minimize

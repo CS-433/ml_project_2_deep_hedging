@@ -69,7 +69,7 @@ class DDPG_Hedger:
         """
         x = torch.tensor(state).to(torch.float64)
         action = self.actor.forward(x)
-        noise = Normal(torch.tensor([0.0]), torch.tensor([sigma])).sample().item()
+        noise = torch.normal(mean=torch.Tensor([0]),std=torch.Tensor([sigma]))
         return (
             torch.clip((action - 0.5) * 2 + noise, -state[0], 1.0 - state[0])
             .detach()
