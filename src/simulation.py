@@ -3,31 +3,11 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from tqdm import tqdm
 
-# PARAMETERS
 
-T = 60 # length of simulation 20=1 month, 60 = three months
-S0 = 100 # starting price
-K = 100 # strike price
-sigma = 0.2 # volatility
-r = 0 # risk-free rate
-q = 0 # dividend yield
-mu = 0.05 # expected return on stock
-kappa = 0.01 # trading cost per unit traded
-dt = 1
-notional = 1 # how many stocks the option is on
-rho = -0.4
-v = 0.6
-sigma0 = 0.2
-prob = 0.5
-c = 1.5
-ds = 0.01
-n = 100000
-days = 250
-freq = 1
-np.random.seed(100)
 
 
 # ## Simulation
+
 
 def CallBS(t, T, K, S, r, q, sigma): #[DONE]
     '''
@@ -53,11 +33,7 @@ def CallBS(t, T, K, S, r, q, sigma): #[DONE]
     # delta
     delta = np.exp(-q*(T-t))*norm.cdf(d1)
 
-    # vega not used
-    # vega (for calculating bartlett's delta)
-    #vega = S*np.exp(-r*(T-t)*np.sqrt(T-t)*norm.pdf(d1))
-
-    return P, delta#, vega
+    return P, delta
 
 
 def GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq): #[DONE]
@@ -92,55 +68,23 @@ def GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq): #[DONE]
     return S
 
 
-def sabr_imp_vol(S, K, t, T, r, q, v, sigma_stoch, rho):
-    # calculate implied sabr volatility for bartlett's delta (using formulat B.71b, B.71c in Hagan and Lesniewski (2002))
-    # This is for our special case of the SABR model -> beta = 1
-
-    f = S * np.exp((r - q) * (T-t)) # forward price at time t
-    xi = v/sigma_stoch*np.log(f/K)
-    xi_func = np.log((np.sqrt(1 - 2*rho*xi + xi**2) - rho + xi) / (1-rho))
-    # implied sabr volatility for our case
-    imp_vol = v*(xi/xi_func)*(1 + (rho*v*sigma_stoch/4 + ((2-3*rho**2)*v**2)/24) * (T-t)) 
-
-    return imp_vol
-
-
-def bartlett_delta(T, t, S, K, sigma_stoch, ds, rho, v):
-    # Find Bartlett's delta using numerical differentiation
-    dsigma = ds * v * rho / (S) # following Bartlett (2006) Eq. 12 and using 
-
-    i_sigma = sabr_imp_vol(S, K, t, T, r, q, v, sigma_stoch, rho)
-    i_sigma_plus = sabr_imp_vol(S + ds, K, t, T, r, q, v, sigma_stoch + dsigma, rho)
-
-    p_base, _ = CallBS(t, T, K, S, r, q, i_sigma)
-    p_plus, _ = CallBS(t, T, K, S + ds, r, q, i_sigma_plus)
-
-    # finite differences
-    bartlett_delta = (p_plus-p_base) / ds
-
-    return bartlett_delta
-
-def SABR_sim(n, days, freq, T, dt, S0, r, q, sigma0, v, rho, ds): #[DONE]
+def SABR_sim(n, days, freq, T, dt, S0, sigma0, v, rho, mu): #[DONE]
     '''
     Simulates the price of the underlying with a special case of the SABR model (beta = 1), from time 0 to final time T.
     Calculates the option price and delta at all time steps using the Black-Scholes option pricing formula.
     Inputs:
         n =           [float] number of simulations
+        days =        [int] number of days in a year
+        freq =        [float] trading frequency
         T =           [float] end time (expiry)
         dt =          [float] time step
         S0 =          [float] current (starting) price
-        r =           [float] risk-free rate
-        q =           [float] dividend yield
-        sigma_0 =     [float] initial volatility
+        sigma0 =     [float] initial volatility
         v =           [float] volatility of underlying volatility
         rho =         [float] correlation of the two Brownian Motions
-        days =        [int] number of days in a year
-        freq =        [float] trading frequency
     Output:
         S =           [array] simulated price process
         sigma_stoch = [array] simulated stochastic volatility process
-        p =           [array] derived option price process
-        delta =       [array] derived option delta process (called "practitioners' delta" in paper)
     '''
 
     T = int(T/freq) # adjust T to frequency
@@ -151,21 +95,69 @@ def SABR_sim(n, days, freq, T, dt, S0, r, q, sigma0, v, rho, ds): #[DONE]
 
     sigma_stoch[:, 0] = sigma0
     S[:, 0] = S0
-
+ 
     # generate parameters for creating correlated random numbers
     mean = np.array([0,0])
     Corr = np.array([[1, rho], [rho, 1]]) # Correlation matrix
     STD = np.diag([1,1]) # standard deviation vector
     Cov = STD@Corr@STD # covariance matrix, input of multivariate_normal function
 
+
     # generate price path based on random component and derive option price and delta
     for t in tqdm(range(1,T)):  
         dW = np.random.multivariate_normal(mean, Cov, size = n)  # correlated random BM increments
         sigma_stoch[:, t] = sigma_stoch[:, t-1]*np.exp((-0.5*v**2)*dt/days + v*np.sqrt(dt/days)*dW[:, 0]) # GBM model of volatility
         S[:, t] = S[:, t-1]*np.exp((mu - 0.5*sigma_stoch[:, t]**2)*dt/days + sigma_stoch[:, t]*np.sqrt(dt/days)*dW[:, 1]) # Black-Scholdes GBM model of underlying price
-    
+
 
     return S, sigma_stoch
+
+
+def SABR_IV(sigma_stoch, t, T, S, K, r, q, v, rho):
+    # future price
+    f = S * np.exp((r - q) * (T-t))
+    # at the money case
+    atm = sigma_stoch * (1+(T-t)*(rho * v * sigma_stoch/4  + v**2 * (2-3 * rho**2)/24))
+    xi = (v/ sigma_stoch) * np.log(f / K)
+    xi_func = np.log((np.sqrt(1 - 2 * rho * xi + xi**2) + xi - rho) / (1 - rho))
+
+    imp_vol = np.where(f == K, atm, atm * xi / xi_func)
+
+    return imp_vol
+
+
+def bartlett_delta(T, t, S, K, ivol, ds, rho, v):
+    # Find Bartlett's delta using numerical differentiation
+    d_volatility = ds * v * rho/S # following Bartlett (2006) Eq. 12 and using 
+
+    i_sigma = SABR_IV(ivol, t, T, S, K, r, q, v, rho)
+    i_sigma_plus = SABR_IV(ivol + d_volatility, t, T, S + ds, K, r, q, v, rho)
+
+    p_base, _ = CallBS(t, T, K, S, r, q, i_sigma)
+    p_plus, _ = CallBS(t, T, K, S + ds, r, q, i_sigma_plus)
+
+    # finite differences
+    bartlett_delta = (p_plus-p_base) / ds
+
+    return bartlett_delta
+
+def simulateGBM(n, T, dt, S0, mu, r, q, sigma, days, freq):
+    S_gbm = GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq)
+    times = np.arange(0,T,freq)
+    p_gbm, d_gbm = CallBS(times/days, T/days, K, S_gbm, r, q, sigma)
+
+    return S_gbm, p_gbm, d_gbm
+
+def simulateSABR (n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v):
+    S_sabr, s_sabr = SABR_sim(n, days, freq, T, dt, S0, sigma, v, rho, mu)
+    times = np.arange(0,T,freq)
+    iv_SABR = SABR_IV(s_sabr, times/days, T/days, S_sabr, K, r, q, v, rho)
+    p_sabr, delta_sabr= CallBS(times/days, T/days, K, S_sabr, r, q, s_sabr)
+    bl_delta_sabr = bartlett_delta(T/days, times/days, S_sabr, K, iv_SABR, ds, rho, v)
+
+    return S_sabr, s_sabr, iv_SABR, p_sabr, delta_sabr, bl_delta_sabr
+
+
 
 def OU(X0, beta, alpha, sigmaOU, n, T, freq, days, dt):
     '''Generates an Ornstein-Uhlenbeck simulation
@@ -182,12 +174,42 @@ def OU(X0, beta, alpha, sigmaOU, n, T, freq, days, dt):
         X[:,t] = (1-beta)*X[:,t-1] + alpha*beta + sigmaOU*np.sqrt(dt/days)*dW
     
     return X
+
 # ## Classical Delta and Bartlett Hedging for Short European Call Option (Benchmark)
+
+def hedgingStrategy(method,notional, n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v):
+    '''
+    Implements delta hedging for GBM model and delta hedging and bartlett hedging for SABR model.
+    '''
+    if method == "GBM":
+        S_gbm, p_gbm, d_gbm = simulateGBM(n, T, dt, S0, mu, r, q, sigma, days, freq)
+        trading_gbm = np.diff(d_gbm, axis = 1)
+        trading_gbm = np.concatenate((d_gbm[:,0].reshape(-1,1), trading_gbm), axis=1)
+        trading_gbm *= notional
+        holding_gbm = d_gbm*notional
+
+        return S_gbm, p_gbm, d_gbm, trading_gbm, holding_gbm
+
+    if method == "SABR":
+        # sabr delta hedging
+        S_sabr, s_sabr, iv_SABR, p_sabr, delta_sabr, bl_delta_sabr = simulateSABR(n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v)
+        trading_sabr = np.diff(delta_sabr, axis = 1)
+        trading_sabr = np.concatenate((delta_sabr[:,0].reshape(-1,1), trading_sabr), axis=1)*notional
+        trading_sabr *= notional
+        holding_sabr = delta_sabr*notional
+
+        # sabr bartlett delta hedging
+        trading_sabr_bartlett = np.diff(bl_delta_sabr, axis = 1)
+        trading_sabr_bartlett = np.concatenate((bl_delta_sabr[:,0].reshape(-1,1), trading_sabr_bartlett), axis=1)
+        trading_sabr_bartlett *= notional
+        holding_sabr_bartlett = bl_delta_sabr*notional
+
+        return S_sabr, p_sabr, delta_sabr, bl_delta_sabr, trading_sabr, holding_sabr, trading_sabr_bartlett, holding_sabr_bartlett
 
 # ## Evaluation
 
 
-def APL_process(p, S, holding):
+def APL_process(S, p, holding):
     '''
     Calculates the Accounting PnL process for a portfolio of an option, the underlying, with proportional trading costs
     Inputs:
@@ -198,21 +220,19 @@ def APL_process(p, S, holding):
         APL =            [array] process of Accounting PnL
         holding_lagged = [array] lagged process of number of underlying held at each period
     '''
+    kappa = 0.01
     # create lagged variables for APL
     p_lagged = np.roll(p, 1)
-    p_lagged[0] = np.nan # the first element was p[-1], this has to be changed to NaN
+    p_lagged[:, 0] = np.nan # the first element was p[-1], this has to be changed to NaN
     S_lagged = np.roll(S, 1)
-    S_lagged[0] = np.nan # the first element was S[-1], this has to be changed to NaN
+    S_lagged[:, 0] = np.nan # the first element was S[-1], this has to be changed to NaN
     holding_lagged = np.roll(holding, 1)
-    holding_lagged[0] = np.nan # the first element was holding[-1], this has to be changed to NaN
-    
-
+    holding_lagged[:, 0] = np.nan # the first element was holding[-1], this has to be changed to NaN
 
     # accounting PnL
     APL = p - p_lagged + holding_lagged*(S-S_lagged) - kappa* np.abs(S*(holding - holding_lagged)) 
-    APL_unhedged = p-p_lagged
 
-    return APL, holding_lagged, APL_unhedged
+    return APL, holding_lagged
 
 
 def hedgingCost(kappa, S, holding, holding_lagged):
@@ -227,11 +247,8 @@ def hedgingCost(kappa, S, holding, holding_lagged):
         C =               [array] total hedging cost from time t onward
     '''
     # Hedging cost at each period
-    hedging_cost = kappa* np.abs(S*(holding - holding_lagged))
+    C = kappa* np.abs(S*(holding - holding_lagged))
 
-    # The reverse cumulative sum represents the remaining total hedging cost from time t onwards
-    # The remaining total hedging cost C_t, is calculated at the beginning of each period t (before hedging transaction at time t is made)
-    C = np.nancumsum(hedging_cost[::-1])[::-1] 
 
     return C
 
@@ -240,15 +257,17 @@ def objective(C, c):
     '''
     Calculates the loss from time t (present) to time T (expiry).
     Input:
-        C = [array] total hedging cost, C[t] = total hedging cost from time t until T
+        C = [array] total hedging cost
         c = [float] weight of standard deviation
     Output:
-        Y = [array] loss function over time, Y[t] = loss at time t
+        Y = [array] loss function over time
     '''
-    Y = np.zeros(len(C))
+    Y = np.zeros(C.shape)
 
-    for t in range(len(C)):
-        Y[t] = np.mean(C[t:]) + c*np.std(C[t:])
+    for t in range(C.shape[1]):
+        Y[:,t] = \
+            np.nanmean(C[:, :(t+1)], axis = 1) + \
+            c*np.nanstd(C[:, :(t+1)], axis = 1)
 
     return Y
 
