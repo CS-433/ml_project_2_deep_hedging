@@ -6,8 +6,8 @@ from src.env import StockTradingEnv
 from src.agent import DDPG_Hedger
 from src.network import MLP
 
-BATCH_SIZE = 32
-N_EPISODE = 500
+BATCH_SIZE = 16
+N_EPISODE = 5000
 
 
 def objective(trial):
@@ -54,20 +54,20 @@ def objective(trial):
 
         # store total rewards after some training is done
         # we only consider alst 10 total rewards as a quantity to minimize
-        if episode > N_EPISODE - 20:
+        if episode > N_EPISODE - 1000:
             target_rewards.append(ep_tot_reward)
 
         if episode % trg_update == 0:  # update target network
             agent.polyak_update()
 
-        noise_std -= 0.0001
+        noise_std *= 0.9999
 
     return np.mean(target_rewards)
 
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=200)
 
     # pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
     # complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
