@@ -69,7 +69,7 @@ class DDPG_Hedger:
         """
         x = torch.tensor(state).to(torch.float64)
         action = self.actor.forward(x)
-        noise = torch.normal(mean=torch.Tensor([0]),std=torch.Tensor([sigma]))
+        noise = torch.normal(mean=torch.Tensor([0]), std=torch.Tensor([sigma]))
         return (
             torch.clip((action - 0.5) * 2 + noise, -state[0], 1.0 - state[0])
             .detach()
@@ -89,12 +89,19 @@ class DDPG_Hedger:
         actions = torch.tensor(batch.action)
         rewards = torch.tensor(batch.reward)
         dones = torch.tensor(batch.done).float()
+
+        # define stateactions
         next_states = torch.tensor(batch.next_state)
+        next_stateaction = torch.hstack(
+            [next_states, self.actor_target(next_states)]
+        ).detach()
+
+        stateaction = torch.hstack([states, actions])
 
         # compute Q_1 loss
-        Q_1 = self.critic_1(torch.hstack([states, actions]))
+        Q_1 = self.critic_1(stateaction)
         y_1 = rewards + self.gamma * (1 - dones) * self.critic_1_target(
-            torch.hstack([next_states, self.actor_target(next_states)]).detach()
+            next_stateaction
         )
 
         critic_loss_1 = self.critic_loss(Q_1, y_1)
@@ -105,20 +112,11 @@ class DDPG_Hedger:
         self.critic_1_optimizer.step()
 
         # compute Q_2 loss
-        Q_2 = self.critic_2(torch.hstack([states, actions]))
+        Q_2 = self.critic_2(stateaction)
         y_2 = (
             rewards**2
-            + (self.gamma**2)
-            * (1 - dones)
-            * self.critic_2_target(
-                torch.hstack([next_states, self.actor_target(next_states)]).detach()
-            )
-            + 2
-            * self.gamma
-            * rewards
-            * self.critic_1_target(
-                torch.hstack([next_states, self.actor_target(next_states)]).detach()
-            )
+            + (self.gamma**2) * (1 - dones) * self.critic_2_target(next_stateaction)
+            + 2 * rewards * self.gamma * self.critic_1_target(next_stateaction)
         )
 
         critic_loss_2 = self.critic_loss(Q_2, y_2)
@@ -131,8 +129,8 @@ class DDPG_Hedger:
         # Get actor loss
         state_action = torch.hstack([states, self.actor(states)])
         cost_variance = self.critic_2(state_action) - self.critic_1(state_action) ** 2
-        # print(self.critic_1(state_action)[:3], self.critic_2(state_action)[:3])
-        actor_loss = (
+
+        actor_loss = -(
             self.critic_1(state_action)
             + 1.5 * torch.sqrt(torch.where(cost_variance < 0, 0, cost_variance))
         ).mean()
@@ -141,10 +139,9 @@ class DDPG_Hedger:
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        # print(critic_loss_1, critic_loss_2, actor_loss)
 
         if output:
-            return actor_loss.detach().item()
+            return critic_loss_1, critic_loss_2, actor_loss.detach().item()
 
     def polyak_update(self):
         # Update the frozen target models
@@ -164,14 +161,18 @@ class DDPG_Hedger:
         ):
             trg_param = trg_param * (1.0 - self.tau) + src_param * self.tau
 
-    def save(self, filename):
-        torch.save(self.critic.state_dict(), filename + "_critic")
-        torch.save(self.actor.state_dict(), filename + "_actor")
+    def save(self, name):
+        torch.save(self.critic_1.state_dict(), f"model/daily/critic_1_{name}.pt")
+        torch.save(self.critic_2.state_dict(), f"model/daily/critic_2_{name}.pt")
+        torch.save(self.actor.state_dict(), f"model/daily/actor_{name}.pt")
 
-    def load(self, filename):
-        self.critic.load_state_dict(torch.load(filename + "_critic"))
-        self.actor.load_state_dict(torch.load(filename + "_actor"))
+    def load(self, name):
+        # load trained weights to Q_1, Q_2, Actor
+        self.critic_1.load_state_dict(torch.load(f"model/daily/critic_1_{name}.pt"))
+        self.critic_2.load_state_dict(torch.load(f"model/daily/critic_2_{name}.pt"))
+        self.actor.load_state_dict(torch.load(f"model/daily/actor_{name}.pt"))
 
-        # define target network needed for DDPG optimization
+        # Copy above 3 to target networks.
+        self.critic_1_target = deepcopy(self.critic_1)
+        self.critic_2_target = deepcopy(self.critic_2)
         self.actor_target = deepcopy(self.actor)
-        self.critic_target = deepcopy(self.critic)

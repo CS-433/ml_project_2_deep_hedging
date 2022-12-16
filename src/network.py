@@ -12,6 +12,7 @@ class MLP(nn.Module):
         self.dim_out = dim_out
 
         self.model = nn.Sequential(
+            nn.LayerNorm(self.dim_in, elementwise_affine=True),
             nn.Linear(self.dim_in, self.dim_hidden),
             nn.ReLU(),
             nn.LayerNorm(self.dim_hidden, elementwise_affine=True),

@@ -19,15 +19,16 @@ if __name__ == "__main__":
 
     env = StockTradingEnv(reset_path=True)
 
-    nHidden = hyp_params["hidden_dim"]
     actor_lr = 10 ** hyp_params["actor_lr"]
     critic_lr = 10 ** hyp_params["critic_lr"]
     trg_update = hyp_params["polyak_update_freq"]
 
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
-    actor = MLP(nState, nHidden, nAction, "Sigmoid")
-    qnet_1 = MLP(nState + nAction, nHidden, nAction, "")
-    qnet_2 = MLP(nState + nAction, nHidden, nAction, "")
+
+    # we use hidden layer size of 32, 64 as the author used.
+    actor = MLP(nState, 32, nAction, "Sigmoid")
+    qnet_1 = MLP(nState + nAction, 32, nAction, "")
+    qnet_2 = MLP(nState + nAction, 32, nAction, "")
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
