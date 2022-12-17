@@ -13,8 +13,8 @@ N_EPISODE = 500
 def objective(trial):
 
     # set optuna param range
-    critic_lr = 10 ** trial.suggest_float("critic_lr", -6, -1)
-    actor_lr = 10 ** trial.suggest_float("actor_lr", -6, -1)
+    critic_lr = 10 ** trial.suggest_float("critic_lr", -5, -1)
+    actor_lr = 10 ** trial.suggest_float("actor_lr", -5, -1)
 
     # define environment and the agent
     env = StockTradingEnv(reset_path=True)
@@ -26,7 +26,7 @@ def objective(trial):
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
-    noise_std = 1
+    epsilon = 1
 
     for episode in range(N_EPISODE):
         # reset state
@@ -35,7 +35,7 @@ def objective(trial):
 
         while True:
             # take action given state
-            action = agent.act(state, noise_std)
+            action = agent.act(state, epsilon)
 
             # take next step of the environment
             next_state, reward, done = env.step(action)
@@ -43,7 +43,7 @@ def objective(trial):
             # record interaction between environment and the agent
             agent.store(state, action, reward, next_state, done)
 
-            ep_tot_reward -= reward
+            ep_tot_reward += reward
             state = next_state
 
             agent.update()
@@ -52,18 +52,17 @@ def objective(trial):
             if done:
                 break
 
+        epsilon *= 0.995
         # store total rewards after some training is done
         # we only consider alst 10 total rewards as a quantity to minimize
-        if episode > N_EPISODE - 1000:
+        if episode > int(N_EPISODE * 0.9):
             target_rewards.append(ep_tot_reward)
-
-        noise_std *= 0.9999
 
     return np.mean(target_rewards)
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=200)
 
     # pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]

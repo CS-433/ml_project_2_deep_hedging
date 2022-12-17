@@ -1,0 +1,9 @@
+params used
+- actor rate, critic rates are 10 ** -4
+- batch size = 16, episodes 1000.
+- epsilon decay = 0.997
+
+this is the very first training done. We did not use hyperparams trained by optuna.
+we saw that the rewards dont increase towards zero but diverging.
+
+maybe increase the batch size 32 and use optuna hyperparams.

@@ -1,6 +1,8 @@
+import os
 import sys
 import json
 import numpy as np
+import pandas as pd
 
 from src.env import StockTradingEnv
 from src.agent import DDPG_Hedger
@@ -10,9 +12,14 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 
 
 if __name__ == "__main__":
-    BATCH_SIZE = 16
-    N_EPISODE = 10000
-    DISC_RATE = 1
+
+    # make experiment results folder
+    experiment_name = "v2"
+    result_folder_path = f"model/{experiment_name}"
+    os.makedirs(result_folder_path, exist_ok=True)
+
+    BATCH_SIZE = 32
+    N_EPISODE = 1000
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
@@ -21,8 +28,8 @@ if __name__ == "__main__":
 
     actor_lr = 10 ** hyp_params["actor_lr"]
     critic_lr = 10 ** hyp_params["critic_lr"]
-    trg_update = hyp_params["polyak_update_freq"]
 
+    #actor_lr, critic_lr = 10**-4, 10**-4
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
     # we use hidden layer size of 32, 64 as the author used.
@@ -30,15 +37,20 @@ if __name__ == "__main__":
     qnet_1 = MLP(nState + nAction, 32, nAction, "")
     qnet_2 = MLP(nState + nAction, 32, nAction, "")
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
-
-    target_rewards = []
     noise_std = 1
 
+    total_rewards = []
     for episode in range(N_EPISODE):
         # reset state
         state = env.reset()  # s_0
         ep_tot_reward = 0
 
+        if episode % 100 == 0:
+            isPrint = True
+        else:
+            isPrint = False
+
+        actions = []
         while True:
             # take action given state
             action = agent.act(state, noise_std)
@@ -49,22 +61,26 @@ if __name__ == "__main__":
             # record interaction between environment and the agent
             agent.store(state, action, reward, next_state, done)
 
-            ep_tot_reward -= reward
+            ep_tot_reward += reward
             state = next_state
-            agent.update()
 
+            agent.update()
+            agent.polyak_update()
+            actions.append(np.round(action, 2))
             if done:
                 break
 
-        noise_std -= 0.0001
+        noise_std *= 0.997
 
-        print(f"Episode {episode} Reward: {ep_tot_reward}")
-        # store total rewards after some training is done
-        # we only consider alst 10 total rewards as a quantity to minimize
-        if episode > N_EPISODE - 30:
-            target_rewards.append(ep_tot_reward)
+        if episode % 100 == 0:
+            print(f"Episode {episode} Total Reward: {ep_tot_reward}")
+            print(f"Episode {episode} Action taken: {actions}")
+            total_rewards.append([episode, ep_tot_reward] + actions)
 
-        if episode % trg_update == 0:  # update target network
-            agent.polyak_update()
+    # At the end of episodes,
+    # save training results as csv
+    total_rewards = pd.DataFrame(total_rewards)
+    total_rewards.to_csv(result_folder_path + "/results.csv")
 
-    print(np.mean(target_rewards))
+    # save trained weight for the later use.
+    agent.save(experiment_name)

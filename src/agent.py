@@ -57,7 +57,7 @@ class DDPG_Hedger:
     def store(self, *args):
         self.buffer.store(*args)
 
-    def act(self, state: list, sigma: float = 0.2):
+    def act(self, state: list, epsilon: float = 0.05):
         """
         We use policy function to find the deterministic action instead of distributions
         which is parametrized by distribution parameters learned from the policy.
@@ -68,13 +68,14 @@ class DDPG_Hedger:
         :return:
         """
         x = torch.tensor(state).to(torch.float64)
-        action = self.actor.forward(x)
-        noise = torch.normal(mean=torch.Tensor([0]), std=torch.Tensor([sigma]))
-        return (
-            torch.clip((action - 0.5) * 2 + noise, -state[0], 1.0 - state[0])
-            .detach()
-            .numpy()
-        )
+        if np.random.rand() <= epsilon:
+            action = np.random.uniform(-1, 1)
+        else:
+            action = (
+                self.actor.forward(x).detach().item() - 0.5
+            ) * 2  # output from sigmoid layer
+        # noise = torch.normal(mean=torch.Tensor([0]), std=torch.Tensor([sigma]))
+        return np.clip(action, -state[0], 1.0 - state[0])
 
     def update(self, output=False):
         # calculate return of all times in the episode
@@ -162,15 +163,15 @@ class DDPG_Hedger:
             trg_param = trg_param * (1.0 - self.tau) + src_param * self.tau
 
     def save(self, name):
-        torch.save(self.critic_1.state_dict(), f"model/daily/critic_1_{name}.pt")
-        torch.save(self.critic_2.state_dict(), f"model/daily/critic_2_{name}.pt")
-        torch.save(self.actor.state_dict(), f"model/daily/actor_{name}.pt")
+        torch.save(self.critic_1.state_dict(), f"model/{name}/critic_1_weight.pt")
+        torch.save(self.critic_2.state_dict(), f"model/{name}/critic_2_weight.pt")
+        torch.save(self.actor.state_dict(), f"model/{name}/actor_weight.pt")
 
     def load(self, name):
         # load trained weights to Q_1, Q_2, Actor
-        self.critic_1.load_state_dict(torch.load(f"model/daily/critic_1_{name}.pt"))
-        self.critic_2.load_state_dict(torch.load(f"model/daily/critic_2_{name}.pt"))
-        self.actor.load_state_dict(torch.load(f"model/daily/actor_{name}.pt"))
+        self.critic_1.load_state_dict(torch.load(f"model/{name}/critic_1_weight.pt"))
+        self.critic_2.load_state_dict(torch.load(f"model/{name}/critic_2_weight.pt"))
+        self.actor.load_state_dict(torch.load(f"model/{name}/actor_weight.pt"))
 
         # Copy above 3 to target networks.
         self.critic_1_target = deepcopy(self.critic_1)
