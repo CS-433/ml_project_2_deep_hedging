@@ -1,1 +1,0 @@
-'critic_lr': -2.7216182598074736, 'actor_lr': -4.048859908397175, 'hidden_dim': 27, 'polyak_update_freq': 10

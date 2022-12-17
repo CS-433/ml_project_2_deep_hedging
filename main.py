@@ -29,7 +29,7 @@ if __name__ == "__main__":
     actor_lr = 10 ** hyp_params["actor_lr"]
     critic_lr = 10 ** hyp_params["critic_lr"]
 
-    #actor_lr, critic_lr = 10**-4, 10**-4
+    # actor_lr, critic_lr = 10**-4, 10**-4
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
     # we use hidden layer size of 32, 64 as the author used.
@@ -79,7 +79,11 @@ if __name__ == "__main__":
 
     # At the end of episodes,
     # save training results as csv
-    total_rewards = pd.DataFrame(total_rewards)
+    total_rewards = pd.DataFrame(
+        total_rewards,
+        columns=["Episode", "Episode Total Reward"]
+        + [f"action_step{i}" for i in range(60)],
+    )
     total_rewards.to_csv(result_folder_path + "/results.csv")
 
     # save trained weight for the later use.
