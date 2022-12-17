@@ -64,11 +64,11 @@ class StockTradingEnv(gym.Env):
             c_next
             - c_now
             + self.holdings * (s_next - s_now)
-            - self.kappa * np.abs(s_next * action)
+            - self.kappa * np.abs(s_next * (action - self.holdings))
         )
 
         # A_{t}: update the holding info.
-        self.holdings += action
+        self.holdings = action
 
         # S_{t+1}: previous action, current asset price and time to maturity (H_i-1, S_i, tau_i)
         next_state = [

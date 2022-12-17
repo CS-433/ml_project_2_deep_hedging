@@ -1,0 +1,8 @@
+params used
+- actor rate, critic rates are set from optuna hyper parameters.
+- batch size = 32, episodes 1000.
+- epsilon decay = 0.997
+
+As we trained its hyperparameters but model did not converge. 
+Current agent outputs actions from -1 to 1. We could change the action as number of holdings literally.
+Next time, we will run the model by changing the action formula.

@@ -1,0 +1,14 @@
+params used
+- actor rate, critic rates equal to 10 ** -4
+- batch size = 32, episodes 1000.
+- epsilon decay = 0.997
+
+As we trained its hyperparameters but model did not converge. 
+Current agent outputs actions from -1 to 1. We could change the action as number of holdings literally.
+Next time, we will run the model by changing the action formula.
+
+>>> result
+we changed the action equal to holding not amount to buy/sell. however reward does not increase as training episode increases. See the action values.
+it is mostly zero (no hedging at all). We should either give a lot of weight to transaction cost since the goal of this is to reduce hedging cost as well the agent does actual hedging.
+
+maybe, rewards are too small for actor network to update. since one contract deals 100 stocks, we can increase the size of rewards. we will try this in next run. 

@@ -14,22 +14,22 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v2"
+    experiment_name = "v3"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
     BATCH_SIZE = 32
-    N_EPISODE = 1000
+    N_EPISODE = 1500
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
 
     env = StockTradingEnv(reset_path=True)
 
-    actor_lr = 10 ** hyp_params["actor_lr"]
-    critic_lr = 10 ** hyp_params["critic_lr"]
+    # actor_lr = 10 ** hyp_params["actor_lr"]
+    # critic_lr = 10 ** hyp_params["critic_lr"]
 
-    # actor_lr, critic_lr = 10**-4, 10**-4
+    actor_lr, critic_lr = 10**-4, 10**-4
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
     # we use hidden layer size of 32, 64 as the author used.
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     total_rewards = pd.DataFrame(
         total_rewards,
         columns=["Episode", "Episode Total Reward"]
-        + [f"action_step{i}" for i in range(60)],
+        + [f"action_step{i}" for i in range(59)],
     )
     total_rewards.to_csv(result_folder_path + "/results.csv")
 
