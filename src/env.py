@@ -56,8 +56,8 @@ class StockTradingEnv(gym.Env):
         )
 
         # R_{t} is Acc PnL
-        reward = self.holdings * (s_next - s_now) - self.kappa * np.abs(
-            s_next * (action - self.holdings)
+        reward = self.holdings * (s_next - s_now) - self.kappa * s_next * np.abs(
+            action - self.holdings
         )
 
         # A_{t}: update the holding info.
@@ -76,11 +76,11 @@ class StockTradingEnv(gym.Env):
         if done:
             reward = (
                 reward
-                - (max(s_next - 100, 0) - c_now)
+                - (max(s_next - 100, 0) - c_now) * 100
                 - self.kappa * s_next * self.holdings
             )
         else:  # if not terminal, substract option price difference.
-            reward = reward - (c_next - c_now)
+            reward = reward - (c_next - c_now) * 100
         return next_state, reward, done
 
     def reset(self):

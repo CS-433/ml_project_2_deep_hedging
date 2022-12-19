@@ -7,7 +7,7 @@ from src.agent import DDPG_Hedger
 from src.network import MLP
 
 BATCH_SIZE = 16
-N_EPISODE = 1000
+N_EPISODE = 100
 
 
 def objective(trial):
