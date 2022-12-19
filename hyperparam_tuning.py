@@ -7,14 +7,14 @@ from src.agent import DDPG_Hedger
 from src.network import MLP
 
 BATCH_SIZE = 16
-N_EPISODE = 500
+N_EPISODE = 1000
 
 
 def objective(trial):
 
     # set optuna param range
-    critic_lr = 10 ** trial.suggest_float("critic_lr", -5, -1)
-    actor_lr = 10 ** trial.suggest_float("actor_lr", -5, -1)
+    critic_lr = 10 ** trial.suggest_float("critic_lr", -6, -1)
+    actor_lr = 10 ** trial.suggest_float("actor_lr", -6, -1)
 
     # define environment and the agent
     env = StockTradingEnv(reset_path=True)

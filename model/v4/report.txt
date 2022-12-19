@@ -1,0 +1,3 @@
+kept same params as v3.
+
+changed the magnitude of action = action * 100 to account that 1 option contract has 100 stocks.

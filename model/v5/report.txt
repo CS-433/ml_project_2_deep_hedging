@@ -1,0 +1,3 @@
+same setting as v4.
+
+but we modified the reward function at the end of episode. we included call option payoff at maturity instead of next call price.

@@ -69,11 +69,13 @@ class DDPG_Hedger:
         """
         x = torch.tensor(state).to(torch.float64)
         if np.random.rand() <= epsilon:
-            action = np.random.uniform(-1, 1)
+            action = np.random.uniform(0, 1) * 100
         else:
-            action = self.actor.forward(x).detach().item()  # output from sigmoid layer
+            action = (
+                self.actor.forward(x).detach().item() * 100
+            )  # output from sigmoid layer
         # noise = torch.normal(mean=torch.Tensor([0]), std=torch.Tensor([sigma]))
-        return np.clip(action, 0.0, 1.0)
+        return np.clip(action, 0.0, 100.0)
 
     def update(self, output=False):
         # calculate return of all times in the episode

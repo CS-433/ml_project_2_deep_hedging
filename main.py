@@ -14,7 +14,7 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v3"
+    experiment_name = "v5"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         state = env.reset()  # s_0
         ep_tot_reward = 0
 
-        if episode % 100 == 0:
+        if episode % 100 == 0 and episode > 0:
             isPrint = True
         else:
             isPrint = False
@@ -64,7 +64,11 @@ if __name__ == "__main__":
             ep_tot_reward += reward
             state = next_state
 
-            agent.update()
+            if isPrint == True:
+                q1_loss, q2_loss, actor_loss = agent.update(isPrint)
+            else:
+                agent.update()
+
             agent.polyak_update()
             actions.append(np.round(action, 2))
             if done:
@@ -72,9 +76,12 @@ if __name__ == "__main__":
 
         noise_std *= 0.997
 
-        if episode % 100 == 0:
+        if episode % 100 == 0 and episode > 0:
             print(f"Episode {episode} Total Reward: {ep_tot_reward}")
             print(f"Episode {episode} Action taken: {actions}")
+            print(
+                f"Episode {episode} Q1 Loss: {q1_loss} Q2 Loss: {q2_loss} Actor loss: {actor_loss}"
+            )
             total_rewards.append([episode, ep_tot_reward] + actions)
 
     # At the end of episodes,
