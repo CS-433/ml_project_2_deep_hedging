@@ -6,8 +6,8 @@ from src.env import StockTradingEnv
 from src.agent import DDPG_Hedger
 from src.network import MLP
 
-BATCH_SIZE = 16
-N_EPISODE = 100
+BATCH_SIZE = 32
+N_EPISODE = 700
 
 
 def objective(trial):
@@ -63,7 +63,7 @@ def objective(trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=50)
 
     # pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
     # complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
