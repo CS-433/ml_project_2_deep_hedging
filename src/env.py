@@ -56,10 +56,8 @@ class StockTradingEnv(gym.Env):
         )
 
         # R_{t} is Acc PnL
-        reward = (
-            -(c_next - c_now) * 100
-            + self.holdings * (s_next - s_now)
-            - self.kappa * np.abs(s_next * (action - self.holdings))
+        reward = self.holdings * (s_next - s_now) - self.kappa * np.abs(
+            s_next * (action - self.holdings)
         )
 
         # A_{t}: update the holding info.
@@ -74,16 +72,15 @@ class StockTradingEnv(gym.Env):
         # done: whether the episode is ended or not
         done = True if self.curr_step + 1 >= self.nSteps else False
 
-        if (
-            done
-        ):  # if terminal subtract option price difference, assumed next option price is just a call payoff and cost for exiting delta hedge position
+        # if terminal subtract option price difference, assumed next option price is just a call payoff and cost for exiting delta hedge position
+        if done:
             reward = (
                 reward
-                - (max(s_next - 100, 0) - c_now) * 100
+                - (max(s_next - 100, 0) - c_now)
                 - self.kappa * s_next * self.holdings
             )
         else:  # if not terminal, substract option price difference.
-            reward = reward - (c_next - c_now) * 100
+            reward = reward - (c_next - c_now)
         return next_state, reward, done
 
     def reset(self):

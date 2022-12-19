@@ -43,6 +43,7 @@ if __name__ == "__main__":
     for episode in range(N_EPISODE):
         # reset state
         state = env.reset()  # s_0
+        actions = []
         ep_tot_reward = 0
 
         if episode % 100 == 0 and episode > 0:
@@ -50,7 +51,6 @@ if __name__ == "__main__":
         else:
             isPrint = False
 
-        actions = []
         while True:
             # take action given state
             action = agent.act(state, noise_std)
