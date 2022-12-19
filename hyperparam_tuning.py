@@ -63,7 +63,7 @@ def objective(trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=200)
+    study.optimize(objective, n_trials=100)
 
     # pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
     # complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
