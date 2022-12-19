@@ -14,22 +14,22 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v5"
+    experiment_name = "v7"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
     BATCH_SIZE = 32
-    N_EPISODE = 1500
+    N_EPISODE = 100000
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
-
+    hyp_params = {"critic_lr": -5.491386792760453, "actor_lr": -5.80149679060888}
     env = StockTradingEnv(reset_path=True)
 
-    # actor_lr = 10 ** hyp_params["actor_lr"]
-    # critic_lr = 10 ** hyp_params["critic_lr"]
+    actor_lr = 10 ** hyp_params["actor_lr"]
+    critic_lr = 10 ** hyp_params["critic_lr"]
 
-    actor_lr, critic_lr = 10**-4, 10**-4
+    # actor_lr, critic_lr = 10**-4, 10**-4
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
     # we use hidden layer size of 32, 64 as the author used.
@@ -74,7 +74,7 @@ if __name__ == "__main__":
             if done:
                 break
 
-        noise_std *= 0.997
+        noise_std *= 0.9999
 
         if episode % 100 == 0 and episode > 0:
             print(f"Episode {episode} Total Reward: {ep_tot_reward}")
@@ -82,13 +82,15 @@ if __name__ == "__main__":
             print(
                 f"Episode {episode} Q1 Loss: {q1_loss} Q2 Loss: {q2_loss} Actor loss: {actor_loss}"
             )
-            total_rewards.append([episode, ep_tot_reward] + actions)
+            total_rewards.append(
+                [episode, ep_tot_reward, q1_loss, q2_loss, actor_loss] + actions
+            )
 
     # At the end of episodes,
     # save training results as csv
     total_rewards = pd.DataFrame(
         total_rewards,
-        columns=["Episode", "Episode Total Reward"]
+        columns=["Episode", "Episode Total Reward", "Q1 Loss", "Q2 Loss", "Actor Loss"]
         + [f"action_step{i}" for i in range(59)],
     )
     total_rewards.to_csv(result_folder_path + "/results.csv")
