@@ -1,3 +1,28 @@
-# CS-433_ML_Project_2_Deep_Hedging
+# EPFL CS-433: Project 2 "Deep hedging" (reproducibility challenge)
 
-we have to write this!
+
+This is an implementation of the Deep Deterministic Policy Gradient reinforcement learning algorithm to perform hedging for a call option, as described in the underlying paper "Deep Hedging of Derivatives Using Reinforcement Learning" (Jay Cao, Jacky Chen, John Hull, Zissis Poulos, 2019).
+
+
+
+## Code description
+
+### `model`
+
+A folder containing different versions of the DDPG implementation (denoted by v1, v2, etc...) defined by the weights of the neural-networks and a text file quickly describing the changes for each version.
+
+---
+
+### `src`
+
+A folder with code for the implementation of DDPG
+
+---
+
+## Authors
+
+- Kim Ki Beom
+
+- Marcell Jordan
+
+- Alexei Ermochkine
