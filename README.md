@@ -15,21 +15,25 @@ A folder containing different versions of the DDPG implementation (denoted by v1
 
 ### `src`
 
-A folder with code for the implementation of DDPG. Refer to the README.md file inside the folder for 
+A folder with code for the implementation of DDPG. Refer to the README.md file inside the folder for mor detailed descriptions
 
 ---
 
 ### `main.py`
 
+Use `python main.py` or `python3 main.py` to run the training of the agent (careful, this takes a long time: approximately [...] minutes) 
+
 ---
 
 ### `hyperparam_tuning.py`
+
+Hyperparameter tuning using optuna. 
 
 ---
 
 ### `requirements.pip`
 
-Type `pip install requirements` in your terminal to install the necessary librairies for running code in this repository.
+Use `pip install requirements` in your terminal to install the necessary librairies for running code in this repository.
 
 ---
 ## Authors
