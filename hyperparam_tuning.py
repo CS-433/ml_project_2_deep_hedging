@@ -46,11 +46,12 @@ def objective(trial):
             ep_tot_reward += reward
             state = next_state
 
-            agent.update()
-            agent.polyak_update()
-
             if done:
                 break
+
+        for i in range(200):
+            agent.update()
+        agent.polyak_update()
 
         epsilon *= 0.995
         # store total rewards after some training is done

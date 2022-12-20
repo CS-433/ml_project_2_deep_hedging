@@ -63,17 +63,15 @@ if __name__ == "__main__":
 
             ep_tot_reward += reward
             state = next_state
-
             if isPrint == True:
                 q1_loss, q2_loss, actor_loss = agent.update(isPrint)
             else:
                 agent.update()
-
-            agent.polyak_update()
             actions.append(np.round(action, 2))
             if done:
                 break
 
+        agent.polyak_update()
         noise_std *= 0.9999
 
         if episode % 100 == 0 and episode > 0:
