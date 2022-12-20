@@ -12,10 +12,10 @@ class StockTradingEnv(gym.Env):
 
     def __init__(self, reset_path=False, data_type="mixed"):
         self.asset_price = pd.read_csv(
-            f"data/Daily/asset_price_{data_type}_1_sim.csv"
+            f"data/Daily/asset_price_{data_type}_sim.csv"
         ).values
         self.option_price = pd.read_csv(
-            f"data/Daily/option_price_{data_type}_1_sim.csv"
+            f"data/Daily/option_price_{data_type}_sim.csv"
         ).values
         self.nPaths = self.option_price.shape[0]
         self.nSteps = self.option_price.shape[1]
@@ -57,7 +57,8 @@ class StockTradingEnv(gym.Env):
 
         # R_{t} is Acc PnL
         reward = (
-            -(c_next - c_now) * 100
+            #-(c_next - c_now) * 100
+            -(c_next - c_now) 
             + self.holdings * (s_next - s_now)
             - self.kappa * np.abs(s_next * (action - self.holdings))
         )
@@ -79,11 +80,14 @@ class StockTradingEnv(gym.Env):
         ):  # if terminal subtract option price difference, assumed next option price is just a call payoff and cost for exiting delta hedge position
             reward = (
                 reward
-                - (max(s_next - 100, 0) - c_now) * 100
+                #- (max(s_next - 100, 0) - c_now) * 100
+                - (max(s_next - 100, 0) - c_now)
                 - self.kappa * s_next * self.holdings
             )
         else:  # if not terminal, substract option price difference.
-            reward = reward - (c_next - c_now) * 100
+            reward = reward - (c_next - c_now)
+            #reward = reward - (c_next - c_now) * 100
+
         return next_state, reward, done
 
     def reset(self):
