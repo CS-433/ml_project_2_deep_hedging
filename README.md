@@ -1,7 +1,7 @@
 # EPFL CS-433: Project 2 "Deep hedging" (reproducibility challenge)
 
 
-This is an implementation of the Deep Deterministic Policy Gradient reinforcement learning algorithm to perform hedging for a call option, as described in the underlying paper *Deep Hedging of Derivatives Using Reinforcement Learning* (Jay Cao, Jacky Chen, John Hull, Zissis Poulos, 2019). 
+This is an implementation of the Deep Deterministic Policy Gradient reinforcement learning algorithm to perform hedging for a call option, as described in the underlying paper *Deep Hedging of Derivatives Using Reinforcement Learning* (Jay Cao, Jacky Chen, John Hull, Zissis Poulos, 2019). The code mainly uses PyTorch and NumPy. All required librairies are specified in `requirements.pip` 
 
 
 
