@@ -33,7 +33,7 @@ Hyperparameter tuning using optuna.
 
 ### `requirements.pip`
 
-Use `pip install requirements` in your terminal to install the necessary librairies for running code in this repository.
+Use `pip install requirements` in your terminal to install the necessary librairies for running code in this repository .
 
 ---
 ## Authors
