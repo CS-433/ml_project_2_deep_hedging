@@ -31,7 +31,7 @@ class DDPG_Hedger:
             "Transition",
             ("state", "action", "reward", "next_state", "done"),
         )
-        self.buffer = ExpReplay(10000, self.transition)
+        self.buffer = ExpReplay(100000, self.transition)
 
         # define actor and critic ANN.
         self.actor = Actor
@@ -74,8 +74,7 @@ class DDPG_Hedger:
             action = (
                 self.actor.forward(x).detach().item() * 100
             )  # output from sigmoid layer
-        # noise = torch.normal(mean=torch.Tensor([0]), std=torch.Tensor([sigma]))
-        return np.clip(action, 0.0, 100.0)
+        return np.clip(action, -state[0], 100.0 - state[0])
 
     def update(self, output=False):
         # calculate return of all times in the episode
@@ -92,12 +91,11 @@ class DDPG_Hedger:
         dones = torch.tensor(batch.done).float()
 
         # define stateactions
+        stateaction = torch.hstack([states, actions])
         next_states = torch.tensor(batch.next_state)
         next_stateaction = torch.hstack(
             [next_states, self.actor_target(next_states)]
         ).detach()
-
-        stateaction = torch.hstack([states, actions])
 
         # compute Q_1 loss
         Q_1 = self.critic_1(stateaction)
@@ -129,7 +127,7 @@ class DDPG_Hedger:
 
         # Get actor loss
         state_action = torch.hstack([states, self.actor(states)])
-        cost_variance = self.critic_2(state_action) - self.critic_1(state_action) ** 2
+        cost_variance = self.critic_2(state_action) - self.critic_1(state_action).pow(2)
 
         actor_loss = -(
             self.critic_1(state_action)
