@@ -177,36 +177,38 @@ def OU(X0, beta, alpha, sigmaOU, n, T, freq, days, dt):
 
 # ## Classical Delta and Bartlett Hedging for Short European Call Option (Benchmark)
 
-def hedgingStrategy(method,notional, n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v):
+def hedgingStrategy(method,notional, delta, bl_delta):
     '''
     Implements delta hedging for GBM model and delta hedging and bartlett hedging for SABR model.
-    '''
-    if method == "GBM":
-        S_gbm, p_gbm, d_gbm = simulateGBM(n, T, dt, S0, mu, r, q, sigma, days, freq)
-        trading_gbm = np.diff(d_gbm, axis = 1)
-        trading_gbm = np.concatenate((d_gbm[:,0].reshape(-1,1), trading_gbm), axis=1)
-        trading_gbm *= notional
-        holding_gbm = d_gbm*notional
+    Inputs: 
+        method:     [string] simulation method, "GBM" or "SABR"
+        notional:   [int] number of stocks the option is written on
+        delta:      [array] time series of the option BS delta until maturity (calculated from simulation)
+        bl_delta:   [array] time series of the option Bartlett - delta until maturity (calculated from simulation) only in SABR case
+    Outputs:
+        trading:    [array] time series of trading decisions under BS delta hedging
+        holding:    [array] time series of holding level of the underlying, under BS delta hedging
+        trading_bl: [array] time series of trading decisions under Bartlett delta hedging
+        holding_bl: [array] time series of holding level of the underlying, under Bartlett delta hedging
 
-        return S_gbm, p_gbm, d_gbm, trading_gbm, holding_gbm
+    '''
+    trading = np.diff(delta, axis = 1)
+    trading = np.concatenate((delta[:,0].reshape(-1,1), trading), axis=1)
+    trading *= notional
+    holding = delta*notional
+
 
     if method == "SABR":
-        # sabr delta hedging
-        S_sabr, s_sabr, iv_SABR, p_sabr, delta_sabr, bl_delta_sabr = simulateSABR(n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v)
-        trading_sabr = np.diff(delta_sabr, axis = 1)
-        trading_sabr = np.concatenate((delta_sabr[:,0].reshape(-1,1), trading_sabr), axis=1)*notional
-        trading_sabr *= notional
-        holding_sabr = delta_sabr*notional
-
         # sabr bartlett delta hedging
-        trading_sabr_bartlett = np.diff(bl_delta_sabr, axis = 1)
-        trading_sabr_bartlett = np.concatenate((bl_delta_sabr[:,0].reshape(-1,1), trading_sabr_bartlett), axis=1)
-        trading_sabr_bartlett *= notional
-        holding_sabr_bartlett = bl_delta_sabr*notional
+        trading_bl = np.diff(bl_delta, axis = 1)
+        trading_bl = np.concatenate((bl_delta[:,0].reshape(-1,1), trading_bl), axis=1)
+        trading_bl *= notional
+        holding_bl = bl_delta*notional
 
-        return S_sabr, p_sabr, delta_sabr, bl_delta_sabr, trading_sabr, holding_sabr, trading_sabr_bartlett, holding_sabr_bartlett
+        return trading, holding, trading_bl, holding_bl
 
-# ## Evaluation
+    else:
+        return trading, holding
 
 
 def APL_process(S, p, holding):
