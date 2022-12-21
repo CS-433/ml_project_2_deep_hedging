@@ -34,8 +34,11 @@ def objective(trial):
         ep_tot_reward = 0
 
         while True:
+            # normalize the state
+            normalized_state = env.normalize(state)
+
             # take action given state
-            action = agent.act(state, epsilon)
+            action = agent.act(normalized_state, epsilon)
 
             # take next step of the environment
             next_state, reward, done = env.step(action)
@@ -50,7 +53,7 @@ def objective(trial):
                 break
 
         for i in range(200):
-            agent.update()
+            agent.update(env.price_stat)
         agent.polyak_update()
 
         epsilon *= 0.995

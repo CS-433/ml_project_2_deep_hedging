@@ -19,17 +19,17 @@ if __name__ == "__main__":
     os.makedirs(result_folder_path, exist_ok=True)
 
     BATCH_SIZE = 32
-    N_EPISODE = 100000
+    N_EPISODE = 5000
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
     hyp_params = {"critic_lr": -5.491386792760453, "actor_lr": -5.80149679060888}
     env = StockTradingEnv(reset_path=True)
 
-    actor_lr = 10 ** hyp_params["actor_lr"]
-    critic_lr = 10 ** hyp_params["critic_lr"]
+    # actor_lr = 10 ** hyp_params["actor_lr"]
+    # critic_lr = 10 ** hyp_params["critic_lr"]
 
-    # actor_lr, critic_lr = 10**-4, 10**-4
+    actor_lr, critic_lr = 10**-4, 10**-4
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
     # we use hidden layer size of 32, 64 as the author used.
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     qnet_1 = MLP(nState + nAction, 32, nAction, "")
     qnet_2 = MLP(nState + nAction, 32, nAction, "")
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
-    noise_std = 1
+    epsilon = 1
 
     total_rewards = []
     for episode in range(N_EPISODE):
@@ -52,8 +52,11 @@ if __name__ == "__main__":
             isPrint = False
 
         while True:
+            # normalize the state
+            normalized_state = env.normalize(state)
+
             # take action given state
-            action = agent.act(state, noise_std)
+            action = agent.act(normalized_state, epsilon)
 
             # take next step of the environment
             next_state, reward, done = env.step(action)
@@ -63,16 +66,16 @@ if __name__ == "__main__":
 
             ep_tot_reward += reward
             state = next_state
-            if isPrint == True:
-                q1_loss, q2_loss, actor_loss = agent.update(isPrint)
-            else:
-                agent.update()
+
             actions.append(np.round(action, 2))
             if done:
                 break
 
+        for _ in range(20):
+            q1_loss, q2_loss, actor_loss = agent.update(env.price_stat, True)
+
         agent.polyak_update()
-        noise_std *= 0.9999
+        epsilon *= 0.99994
 
         if episode % 100 == 0 and episode > 0:
             print(f"Episode {episode} Total Reward: {ep_tot_reward}")
