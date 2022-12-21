@@ -12,10 +12,10 @@ class StockTradingEnv(gym.Env):
 
     def __init__(self, reset_path=False, data_type="mixed"):
         self.asset_price = pd.read_csv(
-            f"data/Daily/asset_price_{data_type}_1_sim.csv"
+            f"data/asset_price_{data_type}_1_sim.csv"
         ).values
         self.option_price = pd.read_csv(
-            f"data/Daily/option_price_{data_type}_1_sim.csv"
+            f"data/option_price_{data_type}_1_sim.csv"
         ).values
         self.nPaths = self.option_price.shape[0]
         self.nSteps = self.option_price.shape[1]
