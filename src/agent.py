@@ -74,7 +74,7 @@ class DDPG_Hedger:
             action = (
                 self.actor.forward(x).detach().item() * 100
             )  # output from sigmoid layer
-        return np.clip(action, -state[0], 100.0 - state[0])
+        return np.clip(action, 0, 100.0)
 
     def update(self, price_stat, output=False):
         # calculate return of all times in the episode
@@ -85,8 +85,9 @@ class DDPG_Hedger:
         batch = self.transition(*zip(*transitions))
 
         # get rolling stats for price
-        mu_, std_ = torch.Tensor([0, price_stat[0],0]), \
-                    torch.Tensor([100, price_stat[1], 60])
+        mu_, std_ = torch.Tensor([0, price_stat[0], 0]), torch.Tensor(
+            [100, price_stat[1], 60]
+        )
 
         # extract variables from sampled batch.
         states = torch.tensor(batch.state)
@@ -96,13 +97,13 @@ class DDPG_Hedger:
         next_states = torch.tensor(batch.next_state)
 
         # normalize the price in state vector
-        states = (states - mu_)/std_
-        next_states = (next_states - mu_)/std_
-        
+        states = (states - mu_) / std_
+        next_states = (next_states - mu_) / std_
+
         # define stateactions
         stateaction = torch.hstack([states, actions])
         next_stateaction = torch.hstack(
-            [next_states, self.actor_target(next_states)]
+            [next_states, torch.clip(self.actor_target(next_states) * 100, 0, 100)]
         ).detach()
 
         # compute Q_1 loss
@@ -134,7 +135,9 @@ class DDPG_Hedger:
         self.critic_2_optimizer.step()
 
         # Get actor loss
-        state_action = torch.hstack([states, self.actor(states)])
+        state_action = torch.hstack(
+            [states, torch.clip(self.actor(states) * 100, 0, 100)]
+        )
         cost_variance = self.critic_2(state_action) - self.critic_1(state_action).pow(2)
 
         actor_loss = -(

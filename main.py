@@ -75,16 +75,18 @@ if __name__ == "__main__":
             q1_loss, q2_loss, actor_loss = agent.update(env.price_stat, True)
 
         agent.polyak_update()
-        epsilon *= 0.99994
+        epsilon *= 0.999
 
         if episode % 100 == 0 and episode > 0:
             print(f"Episode {episode} Total Reward: {ep_tot_reward}")
             print(f"Episode {episode} Action taken: {actions}")
+            print(f"Episode {episode} Epsilon     : {epsilon}")
+
             print(
-                f"Episode {episode} Q1 Loss: {q1_loss} Q2 Loss: {q2_loss} Actor loss: {actor_loss}"
+                f"Episode {episode} Q1 Loss: {q1_loss} Q2 Loss: {q2_loss} Actor loss: {-actor_loss} \n\n\n"
             )
             total_rewards.append(
-                [episode, ep_tot_reward, q1_loss, q2_loss, actor_loss] + actions
+                [episode, ep_tot_reward, q1_loss, q2_loss, -actor_loss] + actions
             )
 
     # At the end of episodes,
