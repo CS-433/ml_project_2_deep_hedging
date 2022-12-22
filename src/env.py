@@ -11,11 +11,9 @@ class StockTradingEnv(gym.Env):
     """Environment for agent, consists of __init__, step, and reset functions"""
 
     def __init__(self, reset_path=False, data_type="mixed"):
-        self.asset_price = pd.read_csv(
-            f"data/Daily/asset_price_{data_type}_sim.csv"
-        ).values
+        self.asset_price = pd.read_csv(f"data/asset_price_{data_type}_1_sim.csv").values
         self.option_price = pd.read_csv(
-            f"data/Daily/option_price_{data_type}_sim.csv"
+            f"data/option_price_{data_type}_1_sim.csv"
         ).values
         self.nPaths = self.option_price.shape[0]
         self.nSteps = self.option_price.shape[1]
@@ -25,7 +23,12 @@ class StockTradingEnv(gym.Env):
         self.path_choice = int(random.uniform(0, self.nPaths))
         self.path_idx = self.path_choice
 
-        # user-defined options (rewards)
+        # initialize price memory for normalization
+        self.price_memory = []
+        self.price_stat = []
+        self.window_len = 200
+
+        # transaction cost (for rewards)
         self.kappa = 0.0001
 
         # initializing underlying amount
@@ -98,3 +101,20 @@ class StockTradingEnv(gym.Env):
             self.asset_price[self.path_idx, self.curr_step],
             self.nSteps,
         ]  # state0 of new path
+
+    def normalize(self, state):
+        # store price data first
+        self.price_memory.append(state[1])
+
+        if len(self.price_memory) == 1:
+            mu_, std_ = 100, 1
+        else:
+            mu_, std_ = np.mean(self.price_memory[-self.window_len :]), np.std(
+                self.price_memory[-self.window_len :]
+            )
+
+        self.price_stat = [mu_, std_]
+        norm_price = (state[1] - mu_) / std_
+        norm_tau = state[2] / 60
+        norm_action = state[0] / 100
+        return [norm_action, norm_price, norm_tau]
