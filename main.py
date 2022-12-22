@@ -86,14 +86,22 @@ if __name__ == "__main__":
                 f"Episode {episode} Q1 Loss: {q1_loss} Q2 Loss: {q2_loss} Actor loss: {-actor_loss} \n\n\n"
             )
             total_rewards.append(
-                [episode, ep_tot_reward, q1_loss, q2_loss, -actor_loss] + actions
+                [episode, ep_tot_reward, epsilon, q1_loss, q2_loss, -actor_loss]
+                + actions
             )
 
     # At the end of episodes,
     # save training results as csv
     total_rewards = pd.DataFrame(
         total_rewards,
-        columns=["Episode", "Episode Total Reward", "Q1 Loss", "Q2 Loss", "Actor Loss"]
+        columns=[
+            "Episode",
+            "Episode Total Reward",
+            "epsilon",
+            "Q1 Loss",
+            "Q2 Loss",
+            "Actor Loss",
+        ]
         + [f"action_step{i}" for i in range(59)],
     )
     total_rewards.to_csv(result_folder_path + "/results.csv")
