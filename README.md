@@ -1,7 +1,7 @@
 # EPFL CS-433: Project 2 "Deep hedging" (reproducibility challenge)
 
 
-This is an implementation of the Deep Deterministic Policy Gradient reinforcement learning algorithm to perform hedging for a call option, as described in the underlying paper *Deep Hedging of Derivatives Using Reinforcement Learning* (Jay Cao, Jacky Chen, John Hull, Zissis Poulos, 2019). The code mainly uses PyTorch and NumPy. All required librairies are specified in `requirements.pip` 
+This is an implementation of the Deep Deterministic Policy Gradient reinforcement learning algorithm to perform hedging for a call option, as described in the underlying paper *Deep Hedging of Derivatives Using Reinforcement Learning* (Jay Cao, Jacky Chen, John Hull, Zissis Poulos, 2019). The code mainly uses PyTorch and NumPy. All required librairies are specified in `requirements.pip`. 
 
 
 
@@ -15,13 +15,13 @@ A folder containing different versions of the DDPG implementation (denoted by v1
 
 ### `src`
 
-A folder with code for the implementation of DDPG. Refer to the README.md file inside the folder for mor detailed descriptions
+A folder with code for the implementation of DDPG. Refer to the README file inside the folder for more detailed descriptions.
 
 ---
 
 ### `main.py`
 
-Use `python main.py` or `python3 main.py` to run the training of the agent (careful, this takes a long time: approximately [...] minutes) 
+Use `python main.py` or `python3 main.py` to run the training of the agent and save obtained parameters (neural network weights) in a `models/model_name` folder (careful, this takes a long time to run).
 
 ---
 
