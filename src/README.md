@@ -2,7 +2,7 @@
 
 ### `agent.py`
 
-text
+Agent class (actor, critic_1, critic_2, as well as their target counterparts).
 
 ---
 
@@ -14,18 +14,18 @@ text
 
 ### `env.py`
 
-text
+The environment class implemented with openAI's `gym` framework.
 
 ---
 
 ### `network.py`
 
-text
+Definitions of the neural networks that represent the agent.
 
 ---
 
 ### `simulation.py`
 
-text
+All functions necessary for the generation and handling of data. See **notebook/simulation.ipynb** for implementations of these functions.
 
 ---
