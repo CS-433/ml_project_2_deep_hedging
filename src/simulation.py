@@ -9,7 +9,7 @@ from tqdm import tqdm
 # ## Simulation
 
 
-def CallBS(t, T, K, S, r, q, sigma): #[DONE]
+def CallBS(t, T, K, S, r, q, sigma):
     '''
     Calculates the price and the delta of a call option using the Black-Scholes formula.
     Inputs:
@@ -36,7 +36,7 @@ def CallBS(t, T, K, S, r, q, sigma): #[DONE]
     return P, delta
 
 
-def GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq): #[DONE]
+def GBM_sim(n, T, dt, S0, mu, sigma, days, freq):
     '''
     Simulates the price of the underlying with a geometric brownian motion model (Black-Scholes model), from time 0 to final time T.
     Inputs:
@@ -68,7 +68,7 @@ def GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq): #[DONE]
     return S
 
 
-def SABR_sim(n, days, freq, T, dt, S0, sigma0, v, rho, mu): #[DONE]
+def SABR_sim(n, days, freq, T, dt, S0, sigma0, v, rho, mu):
     '''
     Simulates the price of the underlying with a special case of the SABR model (beta = 1), from time 0 to final time T.
     Calculates the option price and delta at all time steps using the Black-Scholes option pricing formula.
@@ -126,7 +126,7 @@ def SABR_IV(sigma_stoch, t, T, S, K, r, q, v, rho):
     return imp_vol
 
 
-def bartlett_delta(T, t, S, K, ivol, ds, rho, v):
+def bartlett_delta(T, t, S, K, ivol, ds, r, q, v, rho):
     # Find Bartlett's delta using numerical differentiation
     d_volatility = ds * v * rho/S # following Bartlett (2006) Eq. 12 and using 
 
@@ -141,19 +141,19 @@ def bartlett_delta(T, t, S, K, ivol, ds, rho, v):
 
     return bartlett_delta
 
-def simulateGBM(n, T, dt, S0, mu, r, q, sigma, days, freq):
-    S_gbm = GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq)
+def simulateGBM(n, T, dt, S0, mu, r, q, sigma, days, freq, K):
+    S_gbm = GBM_sim(n, T, dt, S0, mu, sigma, days, freq)
     times = np.arange(0,T,freq)
     p_gbm, d_gbm = CallBS(times/days, T/days, K, S_gbm, r, q, sigma)
 
     return S_gbm, p_gbm, d_gbm
 
-def simulateSABR (n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v):
+def simulateSABR (n, T, dt, S0, mu, r, q, sigma, days, freq, rho, ds, v, K):
     S_sabr, s_sabr = SABR_sim(n, days, freq, T, dt, S0, sigma, v, rho, mu)
     times = np.arange(0,T,freq)
     iv_SABR = SABR_IV(s_sabr, times/days, T/days, S_sabr, K, r, q, v, rho)
     p_sabr, delta_sabr= CallBS(times/days, T/days, K, S_sabr, r, q, s_sabr)
-    bl_delta_sabr = bartlett_delta(T/days, times/days, S_sabr, K, iv_SABR, ds, rho, v)
+    bl_delta_sabr = bartlett_delta(T/days, times/days, S_sabr, K, iv_SABR, ds, r, q, v, rho)
 
     return S_sabr, s_sabr, iv_SABR, p_sabr, delta_sabr, bl_delta_sabr
 
@@ -211,18 +211,21 @@ def hedgingStrategy(method,notional, delta, bl_delta):
         return trading, holding
 
 
-def APL_process(S, p, holding):
+def APL_process(S, p, holding, K, notional, kappa):
     '''
-    Calculates the Accounting PnL process for a portfolio of an option, the underlying, with proportional trading costs
+    Calculates the notional-adjusted Accounting PnL process for a portfolio of a short call option, 
+    the underlying, with proportional trading costs.
+
     Inputs:
-        S =              [array] underlying price process
-        p =              [array] option price process (adjusted for number of underlying)
-        holding =        [array] process of number of the underlying held at each period
-    Output:
-        APL =            [array] process of Accounting PnL
-        holding_lagged = [array] lagged process of number of underlying held at each period
+        S:               [array] underlying price process
+        p:               [array] option price process (adjusted for number of underlying)
+        holding:         [array] process of number of the underlying held at each period
+        notional:        [float] amount of underlying on which the option is written on
+        kappa:           [float] proportional transaction cost per unit trade
+    Outputs:
+        APL:             [array] process of Accounting PnL
+        holding_lagged:  [array] lagged process of number of underlying held at each period
     '''
-    kappa = 0.01
     # create lagged variables for APL
     p_lagged = np.roll(p, 1)
     p_lagged[:, 0] = np.nan # the first element was p[-1], this has to be changed to NaN
@@ -232,45 +235,39 @@ def APL_process(S, p, holding):
     holding_lagged[:, 0] = np.nan # the first element was holding[-1], this has to be changed to NaN
 
     # accounting PnL
-    APL = p - p_lagged + holding_lagged*(S-S_lagged) - kappa* np.abs(S*(holding - holding_lagged)) 
+    APL = -(p - p_lagged) \
+        + holding_lagged*(S-S_lagged) \
+            - kappa* np.abs(S*(holding - holding_lagged))
+
+    APL[:, -1] = -(np.maximum((S[:,-1] - K), 0)*notional - p_lagged[:,-1]) \
+                    + holding_lagged[:,-1]*(S[:,-1]-S_lagged[:,-1]) \
+                        - kappa* np.abs(S[:,-1]*(holding[:,-1] - holding_lagged[:,-1]))
+
+    APL = np.nancumsum(APL, axis = 1)
 
     return APL, holding_lagged
 
 
-def hedgingCost(kappa, S, holding, holding_lagged):
+def evaluate(APL, optionPrice, c, notional):
     '''
-    Calculates the total hedging cost from time t onward for all t
+    Evaluates hedging for the classical method.
     Inputs:
-        kappa =           [float] proportional hedging cost parameter
-        S =               [array] underlying price process
-        holding =         [array] process of amount of the underlying asset held at any given time t
-        holding_lagged =  [array] process of amount of the underlying asset held at any given time t-1
-    Output:
-        C =               [array] total hedging cost from time t onward
+        APL:         [array] cumulative accounting PnL array of shape (paths, periods)
+        optionPrice: [array] option prices of shape (paths, periods)
+        c:           [float] weight of APL standard deviation in the evaluation function Y(0)
+        notional:    [float] amount of underlying on which the option is written on
+    Outputs:
+        Y:          [float] Y(0) evaluation function
+
     '''
-    # Hedging cost at each period
-    C = kappa* np.abs(S*(holding - holding_lagged))
+    meanCost = -np.nanmean(APL, axis = 1) # negative rewards = costs
+    stdCost = np.nanstd(APL, axis = 1)
+    Y = meanCost + c*stdCost
+
+    percentageMeanRatio = np.mean(meanCost/(notional*optionPrice[:,0]))
+    PercentageStdRatio = np.mean(stdCost/(notional*optionPrice[:,0]))
 
 
-    return C
-
-
-def objective(C, c):
-    '''
-    Calculates the loss from time t (present) to time T (expiry).
-    Input:
-        C = [array] total hedging cost
-        c = [float] weight of standard deviation
-    Output:
-        Y = [array] loss function over time
-    '''
-    Y = np.zeros(C.shape)
-
-    for t in range(C.shape[1]):
-        Y[:,t] = \
-            np.nanmean(C[:, :(t+1)], axis = 1) + \
-            c*np.nanstd(C[:, :(t+1)], axis = 1)
-
-    return Y
+    return Y, percentageMeanRatio, PercentageStdRatio
 
 
