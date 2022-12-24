@@ -14,12 +14,12 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v7"
+    experiment_name = "v8"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
     BATCH_SIZE = 32
-    N_EPISODE = 5000
+    N_EPISODE = 10000
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         total_rewards,
         columns=[
             "Episode",
-            "Episode Total Reward",
+            "Episode Total Cost",
             "epsilon",
             "Q1 Loss",
             "Q2 Loss",

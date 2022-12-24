@@ -16,10 +16,10 @@ class MLP(nn.Module):
             nn.Linear(self.dim_in, self.dim_hidden),
             nn.ReLU(),
             nn.LayerNorm(self.dim_hidden, elementwise_affine=True),
-            nn.Linear(self.dim_hidden, self.dim_hidden * 2),
+            nn.Linear(self.dim_hidden, self.dim_hidden),
             nn.ReLU(),
-            nn.LayerNorm(self.dim_hidden * 2, elementwise_affine=True),
-            nn.Linear(self.dim_hidden * 2, self.dim_out),
+            nn.LayerNorm(self.dim_hidden, elementwise_affine=True),
+            nn.Linear(self.dim_hidden, self.dim_out),
         )
 
         self.activ_layers = {"ReLU": nn.ReLU, "Sigmoid": nn.Sigmoid, "Tanh": nn.Tanh}

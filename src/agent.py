@@ -111,9 +111,8 @@ class DDPG_Hedger:
         y_1 = rewards + self.gamma * (1 - dones) * self.critic_1_target(
             next_stateaction
         )
-
         critic_loss_1 = self.critic_loss(Q_1, y_1)
-
+        
         # Optimize the critic Q_1
         self.critic_1_optimizer.zero_grad()
         critic_loss_1.backward()
@@ -138,12 +137,9 @@ class DDPG_Hedger:
         state_action = torch.hstack(
             [states, torch.clip(self.actor(states) * 100, 0, 100)]
         )
-        cost_variance = self.critic_2(state_action) - self.critic_1(state_action).pow(2)
-
-        actor_loss = -(
-            self.critic_1(state_action)
-            + 1.5 * torch.sqrt(torch.where(cost_variance < 0, 0, cost_variance))
-        ).mean()
+        q_1, q_2 = self.critic_1(state_action), self.critic_2(state_action)
+        cost_std = torch.sqrt(torch.where(q_2 - q_1.pow(2) < 0, 0, q_2 - q_1.pow(2)))
+        actor_loss = (self.critic_1(state_action) + 1.5 * cost_std).mean() * -1
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
