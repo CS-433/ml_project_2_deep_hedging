@@ -23,7 +23,7 @@ class DDPG_Hedger:
 
         # params
         self.gamma = disc_rate
-        self.tau = 0.01
+        self.tau = 0.0001
         self.batch_size = batch_size
 
         # experience replay related
@@ -31,7 +31,7 @@ class DDPG_Hedger:
             "Transition",
             ("state", "action", "reward", "next_state", "done"),
         )
-        self.buffer = ExpReplay(100000, self.transition)
+        self.buffer = ExpReplay(600000, self.transition)
 
         # define actor and critic ANN.
         self.actor = Actor
@@ -51,13 +51,18 @@ class DDPG_Hedger:
         self.critic_1_target = deepcopy(self.critic_1)
         self.critic_2_target = deepcopy(self.critic_2)
 
+        # temporary
+        self.actor_target.isPrint = False
+        self.critic_1_target.isPrint = False
+        self.critic_2_target.isPrint = False
+
     def reset(self):
         self.buffer.clear()
 
     def store(self, *args):
         self.buffer.store(*args)
 
-    def act(self, state: list, epsilon: float = 0.05):
+    def act(self, state: list, epsilon: float = 0.05, isPrint=False):
         """
         We use policy function to find the deterministic action instead of distributions
         which is parametrized by distribution parameters learned from the policy.
@@ -69,12 +74,10 @@ class DDPG_Hedger:
         """
         x = torch.tensor(state).to(torch.float64)
         if np.random.rand() <= epsilon:
-            action = np.random.uniform(0, 1) * 100
+            action = np.random.uniform(0, 1)
         else:
-            action = (
-                self.actor.forward(x).detach().item() * 100
-            )  # output from sigmoid layer
-        return np.clip(action, 0, 100.0)
+            action = self.actor(x).detach().item()
+        return np.clip(action * 100, 0, 100.0)
 
     def update(self, price_stat, output=False):
         # calculate return of all times in the episode
@@ -111,7 +114,6 @@ class DDPG_Hedger:
         y_1 = rewards + self.gamma * (1 - dones) * self.critic_1_target(
             next_stateaction
         )
-
         critic_loss_1 = self.critic_loss(Q_1, y_1)
 
         # Optimize the critic Q_1
@@ -138,12 +140,9 @@ class DDPG_Hedger:
         state_action = torch.hstack(
             [states, torch.clip(self.actor(states) * 100, 0, 100)]
         )
-        cost_variance = self.critic_2(state_action) - self.critic_1(state_action).pow(2)
-
-        actor_loss = -(
-            self.critic_1(state_action)
-            + 1.5 * torch.sqrt(torch.where(cost_variance < 0, 0, cost_variance))
-        ).mean()
+        q_1, q_2 = self.critic_1(state_action), self.critic_2(state_action)
+        cost_std = torch.sqrt(torch.where(q_2 - q_1.pow(2) < 0, 0, q_2 - q_1.pow(2)))
+        actor_loss = (self.critic_1(state_action) + 1.5 * cost_std).mean()
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()

@@ -6,7 +6,7 @@ import pandas as pd
 
 from src.env import StockTradingEnv
 from src.agent import DDPG_Hedger
-from src.network import MLP
+from src.network import MLP, MLP_debug
 
 sys.path.insert(1, "ml_project_2_deep_hedging/src")
 
@@ -14,30 +14,29 @@ sys.path.insert(1, "ml_project_2_deep_hedging/src")
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v7"
+    experiment_name = "v8_new"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
     BATCH_SIZE = 32
-    N_EPISODE = 5000
+    N_EPISODE = 3000
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
-    hyp_params = {"critic_lr": -5.491386792760453, "actor_lr": -5.80149679060888}
-    env = StockTradingEnv(reset_path=True)
-
+    # hyp_params = {"critic_lr": -5.491386792760453, "actor_lr": -5.80149679060888}
     # actor_lr = 10 ** hyp_params["actor_lr"]
     # critic_lr = 10 ** hyp_params["critic_lr"]
 
+    env = StockTradingEnv(reset_path=True, tc=0.0001)
     actor_lr, critic_lr = 10**-4, 10**-4
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
     # we use hidden layer size of 32, 64 as the author used.
-    actor = MLP(nState, 32, nAction, "Sigmoid")
-    qnet_1 = MLP(nState + nAction, 32, nAction, "")
-    qnet_2 = MLP(nState + nAction, 32, nAction, "")
+    actor = MLP(nState, 16, nAction, "Sigmoid")
+    qnet_1 = MLP(nState + nAction, 16, nAction, "")
+    qnet_2 = MLP(nState + nAction, 16, nAction, "")
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
-    epsilon = 1
+    epsilon = 0.5
 
     total_rewards = []
     for episode in range(N_EPISODE):
@@ -62,7 +61,7 @@ if __name__ == "__main__":
             next_state, reward, done = env.step(action)
 
             # record interaction between environment and the agent
-            agent.store(state, action, reward, next_state, done)
+            agent.store(state, action, -reward, next_state, done)
 
             ep_tot_reward += reward
             state = next_state
@@ -71,7 +70,7 @@ if __name__ == "__main__":
             if done:
                 break
 
-        for _ in range(20):
+        for i in range(5):
             q1_loss, q2_loss, actor_loss = agent.update(env.price_stat, True)
 
         agent.polyak_update()
@@ -83,10 +82,10 @@ if __name__ == "__main__":
             print(f"Episode {episode} Epsilon     : {epsilon}")
 
             print(
-                f"Episode {episode} Q1 Loss: {q1_loss} Q2 Loss: {q2_loss} Actor loss: {-actor_loss} \n\n\n"
+                f"Episode {episode} Q1 Loss: {round(q1_loss.item())} Q2 Loss: {round(q2_loss.item())} Actor loss: {round(actor_loss,3)} \n\n\n"
             )
             total_rewards.append(
-                [episode, ep_tot_reward, epsilon, q1_loss, q2_loss, -actor_loss]
+                [episode, ep_tot_reward, epsilon, q1_loss, q2_loss, actor_loss]
                 + actions
             )
 
@@ -96,7 +95,7 @@ if __name__ == "__main__":
         total_rewards,
         columns=[
             "Episode",
-            "Episode Total Reward",
+            "Episode Total Cost",
             "epsilon",
             "Q1 Loss",
             "Q2 Loss",

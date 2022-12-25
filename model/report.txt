@@ -41,3 +41,14 @@ changed the magnitude of action = action * 100 to account that 1 option contract
 same setting as v4.
 
 but we modified the reward function at the end of episode. we included call option payoff at maturity instead of next call price.
+
+------------- 7 -------------
+NORMALIZED THE STATES for calculating the states and updating the network.
+I (kibeom) encourage reader to run about 5000 episode with appropriate epsilon decay. training over that amount is overkill and
+the agent outputs values like 100 or 0.
+
+------------- 8 -------------
+same setting as v7 but ran 1000000 episodes to train weights.
+
+------------- 8_new ---------
+network 

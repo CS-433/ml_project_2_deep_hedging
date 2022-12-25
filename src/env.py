@@ -2,7 +2,6 @@ import gym
 import random
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from gym import spaces
 
@@ -10,10 +9,30 @@ from gym import spaces
 class StockTradingEnv(gym.Env):
     """Environment for agent, consists of __init__, step, and reset functions"""
 
-    def __init__(self, reset_path=False, data_type="mixed", frequency="Daily"):
-        self.asset_price = pd.read_csv(f"data/{frequency}/asset_price_{data_type}_1_sim.csv").values
+    def __init__(
+        self,
+        maturity=3,
+        frequency=1,
+        data_type="mixed",
+        tc=0.0001,
+        reset_path=False,
+        test_env=False,
+    ):
+
+        assert data_type in [
+            "GBM",
+            "SABR",
+            "mixed",
+        ], 'wrong data_type input. Try one of these: {"GBM", "SABR", "mixed"}'
+
+        assert maturity in [1, 3], "try different maturity: {1, 3}"
+        assert frequency in [1, 2, 3, 5], "try different frequency: {1, 2, 3, 5}"
+
+        self.asset_price = pd.read_csv(
+            f"data/{maturity}month/{frequency}d/asset_price_{data_type}_sim.csv"
+        ).values
         self.option_price = pd.read_csv(
-            f"data/{frequency}/option_price_{data_type}_1_sim.csv"
+            f"data/{maturity}month/{frequency}d/option_price_{data_type}_sim.csv"
         ).values
         self.nPaths = self.option_price.shape[0]
         self.nSteps = self.option_price.shape[1]
@@ -21,7 +40,7 @@ class StockTradingEnv(gym.Env):
         # user-defined options (path)
         self.reset_path = reset_path
         self.path_choice = int(random.uniform(0, self.nPaths))
-        self.path_idx = self.path_choice
+        self.path_idx = 0
 
         # initialize price memory for normalization
         self.price_memory = []
@@ -29,7 +48,7 @@ class StockTradingEnv(gym.Env):
         self.window_len = 200
 
         # transaction cost (for rewards)
-        self.kappa = 0.0001
+        self.kappa = tc
 
         # initializing underlying amount
         self.holdings = 0
@@ -45,6 +64,8 @@ class StockTradingEnv(gym.Env):
             shape=(3,),
             dtype=np.float16,
         )
+
+        self.isTest = test_env
 
     def step(self, action: float):
         # Execute one time step within the environment
@@ -79,19 +100,21 @@ class StockTradingEnv(gym.Env):
         if done:
             reward = (
                 reward
-                #- (max(s_next - 100, 0) - c_now) * 100
-                - (max(s_next - 100, 0) - c_now)
+                - (max(s_next - 100, 0) * 100 - c_now)
                 - self.kappa * s_next * self.holdings
             )
         else:  # if not terminal, substract option price difference.
             reward = reward - (c_next - c_now)
-            #reward = reward - (c_next - c_now) * 100
-
         return next_state, reward, done
 
     def reset(self):
-        if self.reset_path:  # if user chose True, sets to his choice, else, random
-            self.path_idx = self.path_choice
+        if self.isTest:
+            self.path_idx += 1
+            if self.path_idx + 1 >= self.asset_price.shape[0]:
+                self.path_idx = 0
+        else:
+            if self.reset_path:  # if user chose True, sets to his choice, else, random
+                self.path_idx = self.path_choice
 
         # when resetting the env, set current_step and previous holdings equal to 0.
         self.curr_step = 0
