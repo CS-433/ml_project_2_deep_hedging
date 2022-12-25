@@ -49,3 +49,6 @@ the agent outputs values like 100 or 0.
 
 ------------- 8 -------------
 same setting as v7 but ran 1000000 episodes to train weights.
+
+------------- 8_new ---------
+network 

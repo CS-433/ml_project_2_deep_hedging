@@ -2,7 +2,6 @@ import gym
 import random
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from gym import spaces
 
@@ -15,6 +14,7 @@ class StockTradingEnv(gym.Env):
         maturity=3,
         frequency=1,
         data_type="mixed",
+        tc=0.0001,
         reset_path=False,
         test_env=False,
     ):
@@ -26,7 +26,7 @@ class StockTradingEnv(gym.Env):
         ], 'wrong data_type input. Try one of these: {"GBM", "SABR", "mixed"}'
 
         assert maturity in [1, 3], "try different maturity: {1, 3}"
-        assert frequency in [1, 2, 3, 5], "try different maturity: {1, 2, 3, 5}"
+        assert frequency in [1, 2, 3, 5], "try different frequency: {1, 2, 3, 5}"
 
         self.asset_price = pd.read_csv(
             f"data/{maturity}month/{frequency}d/asset_price_{data_type}_sim.csv"
@@ -48,7 +48,7 @@ class StockTradingEnv(gym.Env):
         self.window_len = 200
 
         # transaction cost (for rewards)
-        self.kappa = 0.0001
+        self.kappa = tc
 
         # initializing underlying amount
         self.holdings = 0
@@ -100,11 +100,11 @@ class StockTradingEnv(gym.Env):
         if done:
             reward = (
                 reward
-                - (max(s_next - 100, 0) - c_now) * 100
+                - (max(s_next - 100, 0) * 100 - c_now)
                 - self.kappa * s_next * self.holdings
             )
         else:  # if not terminal, substract option price difference.
-            reward = reward - (c_next - c_now) * 100
+            reward = reward - (c_next - c_now)
         return next_state, reward, done
 
     def reset(self):
