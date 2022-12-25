@@ -51,4 +51,8 @@ the agent outputs values like 100 or 0.
 same setting as v7 but ran 1000000 episodes to train weights.
 
 ------------- 8_new ---------
-network 
+network: 
+
+changed network layer order.
+ReLU -> LayerNorm (X)
+ReLU -> LayerNorm (X)

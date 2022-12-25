@@ -11,6 +11,8 @@ class StockTradingEnv(gym.Env):
 
     def __init__(
         self,
+        strike=100,
+        notional=100,
         maturity=3,
         frequency=1,
         data_type="mixed",
@@ -53,6 +55,8 @@ class StockTradingEnv(gym.Env):
         # initializing underlying amount
         self.holdings = 0
         self.curr_step = 0
+        self.notional = notional
+        self.strike = strike
 
         # Actions of the format hold amount [0,1]
         self.action_space = spaces.Box(low=-1, high=100, dtype=np.float16)
@@ -100,7 +104,7 @@ class StockTradingEnv(gym.Env):
         if done:
             reward = (
                 reward
-                - (max(s_next - 100, 0) * 100 - c_now)
+                - (max(s_next - self.strike, 0) * self.notional - c_now)
                 - self.kappa * s_next * self.holdings
             )
         else:  # if not terminal, substract option price difference.
