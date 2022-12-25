@@ -19,7 +19,7 @@ if __name__ == "__main__":
     os.makedirs(result_folder_path, exist_ok=True)
 
     BATCH_SIZE = 32
-    N_EPISODE = 3000
+    N_EPISODE = 300
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)

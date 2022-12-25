@@ -13,8 +13,8 @@ class MLP(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(self.dim_in, self.dim_hidden * 2, bias=False),
-            nn.LayerNorm(self.dim_hidden * 2, elementwise_affine=True), 
-            nn.ReLU(), 
+            nn.LayerNorm(self.dim_hidden * 2, elementwise_affine=True),
+            nn.ReLU(),
             nn.Linear(self.dim_hidden * 2, self.dim_hidden, bias=False),
             nn.LayerNorm(self.dim_hidden, elementwise_affine=True),
             nn.ReLU(),
