@@ -129,7 +129,8 @@ def SABR_IV(sigma_stoch, t, T, S, K, r, q, v, rho):
 def bartlett_delta(T, t, S, K, ivol, ds, rho, v):
     # Find Bartlett's delta using numerical differentiation
     d_volatility = ds * v * rho/S # following Bartlett (2006) Eq. 12 and using 
-
+    r = 0 # risk-free rate
+    q = 0 # dividend yield
     i_sigma = SABR_IV(ivol, t, T, S, K, r, q, v, rho)
     i_sigma_plus = SABR_IV(ivol + d_volatility, t, T, S + ds, K, r, q, v, rho)
 
@@ -144,6 +145,7 @@ def bartlett_delta(T, t, S, K, ivol, ds, rho, v):
 def simulateGBM(n, T, dt, S0, mu, r, q, sigma, days, freq):
     S_gbm = GBM_sim(n, T, dt, S0, mu, r, q, sigma, days, freq)
     times = np.arange(0,T,freq)
+    K = 100
     p_gbm, d_gbm = CallBS(times/days, T/days, K, S_gbm, r, q, sigma)
 
     return S_gbm, p_gbm, d_gbm
@@ -177,7 +179,7 @@ def OU(X0, beta, alpha, sigmaOU, n, T, freq, days, dt):
 
 # ## Classical Delta and Bartlett Hedging for Short European Call Option (Benchmark)
 
-def hedgingStrategy(method,notional, delta, bl_delta):
+def hedgingStrategy(method ,notional, delta, bl_delta):
     '''
     Implements delta hedging for GBM model and delta hedging and bartlett hedging for SABR model.
     Inputs: 
@@ -208,7 +210,7 @@ def hedgingStrategy(method,notional, delta, bl_delta):
         return trading, holding, trading_bl, holding_bl
 
     else:
-        return trading, holding
+        return trading, holding # GBM
 
 
 def APL_process(S, p, holding):
