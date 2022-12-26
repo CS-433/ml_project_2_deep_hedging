@@ -19,7 +19,7 @@ python -m venv venv
 
 After setting up the virtual environment, we need to download training data as current repository does not contain these. First, you need to make `data` folder and run the `notebook/dataGen.ipynb`.
 
-In ``notebook/dataGen.ipynb`, you can change the parameters of stock/option data generating process. Especially, you will need to change `T`, `freq` parameters to run our code. Our code supports `T = {1,3}`, `freq = {1,2,5}` cases. Once you set up these parameters and run the notebook, it will automatically save csv files for you.
+In `notebook/dataGen.ipynb`, you can change the parameters of stock/option data generating process. Especially, you will need to change `T`, `freq` parameters to run our code. Our code supports `T = {1,3}`, `freq = {1,2,5}` cases. Once you set up these parameters and run the notebook, it will automatically save csv files for you.
 
 ### Performance Evaluation
 
