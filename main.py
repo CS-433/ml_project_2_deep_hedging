@@ -25,9 +25,11 @@ if __name__ == "__main__":
 
     with open("model/hypparams.json", "r") as file:
         hyp_params = json.load(file)
-    # hyp_params = {"critic_lr": -5.491386792760453, "actor_lr": -5.80149679060888}
+
+    # use when you have hyper parameter
     # actor_lr = 10 ** hyp_params["actor_lr"]
     # critic_lr = 10 ** hyp_params["critic_lr"]
+    # update_req = hyp_params["update_freq"]
 
     env = StockTradingEnv(reset_path=True, tc=0.0001)
 
