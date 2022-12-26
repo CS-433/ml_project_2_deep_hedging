@@ -22,7 +22,7 @@ ROOT_PATH = "D:/work/Personal/ml_project_2_deep_hedging" (windows)
 ROOT_PATH = "/Users/alexei.ermochkine/../ml_project_2_deep_hedging" (mac)
 ```
 
-Also, we need to set paths for `notebook/dataGen.ipynb`, because we need call .py files from src folder to run the code. Simply paste your src path like below.
+Also, we need to set paths for `notebook/performance_test.ipynb`, because we need call .py files from src folder to run the code. Simply paste your src path like below.
 
 ```
 sys.path.insert(0, '/Users/alexei.ermochkine/Desktop/ml_project_2_deep_hedging/src')
