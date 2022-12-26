@@ -18,7 +18,14 @@ python -m venv venv
 Before running the simulation to obtain the data, we need to set the `ROOT_PATH` variable. Go to `src/paths.py` and edit the variable `ROOT_PATH` to your current cloned repository path. Example is as below.
 
 ```
-ROOT_PATH = "D:/work/Personal/ml_project_2_deep_hedging"
+ROOT_PATH = "D:/work/Personal/ml_project_2_deep_hedging" (windows)
+ROOT_PATH = "/Users/alexei.ermochkine/../ml_project_2_deep_hedging" (mac)
+```
+
+Also, we need to set paths for `notebook/dataGen.ipynb`, because we need call .py files from src folder to run the code. Simply paste your src path like below.
+
+```
+sys.path.insert(0, '/Users/alexei.ermochkine/Desktop/ml_project_2_deep_hedging/src')
 ```
 
 ### Data generation
