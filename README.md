@@ -32,7 +32,7 @@ sys.path.insert(0, '/Users/alexei.ermochkine/Desktop/ml_project_2_deep_hedging/s
 
 After setting up the virtual environment, we need to download training data as current repository does not contain these. First, you need to make a `data` folder and run the `notebook/dataGen.ipynb`.
 
-In `notebook/dataGen.ipynb`, you can change the parameters of stock/option data generating process. Especially, you will need to change `T`, `freq` parameters to run our code. Our code supports `T = {1,3}`, `freq = {1,2,5}` cases. Once you set up these parameters and run the notebook, it will automatically save csv files for you.
+In `notebook/dataGen.ipynb`, you can change the parameters of stock/option data generating process. Especially, you will need to change `T`, `freq` parameters to run our code. Our code supports `T = {1,3}`, `freq = {1,2,3,5}` cases. Once you set up these parameters and run the notebook, it will automatically save csv files for you.
 
 ### Performance Evaluation
 
@@ -61,17 +61,18 @@ After obtainig train/test data from simulation, you can run `performance_evaluat
 │── model # pretrained model parameters
 │   ├── v1
 │   ├── ...
-│   ├── v8
+│   ├── v9
 │   │   ├── actor_weight.pt
-│   │   ├── critic_1_weight.csv
-│   │   └── critic_2_weight.csv
+│   │   ├── critic_1_weight.pt
+│   │   ├── critic_2_weight.pt
+│   │   ├── price_stat.json # need this for state normalization
+│   │   └── results.csv # results stored as csv file
 │   ├── hypparams.json
 │   └── report.txt
 │
 │── notebooks # contains notebooks to reproduce results and generate data
-│   ├── dataGen.ipynb
+│   ├── performance_test.ipynb
 │   ├── simulation.ipynb
-│   ├── performance_evaluation.ipynb
 │   └── README.md
 │
 └── src # DDPG agent, StockTradingEnv source code
