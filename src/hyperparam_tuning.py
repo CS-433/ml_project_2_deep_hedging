@@ -2,9 +2,9 @@ import optuna
 import numpy as np
 import json
 
-from src.env import StockTradingEnv
-from src.agent import DDPG_Hedger
-from src.network import MLP
+from env import StockTradingEnv
+from agent import DDPG_Hedger
+from network import MLP
 
 BATCH_SIZE = 32
 N_EPISODE = 700
