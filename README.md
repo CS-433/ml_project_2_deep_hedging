@@ -54,6 +54,7 @@ After obtainig train/test data from simulation, you can run `performance_evaluat
 │   │   │   ├── option_price_mixed_sim.csv
 │   │   │   └── option_price_SABR_sim.csv
 │   │   ├── 2d
+│   │   ├── 3d
 │   │   └── 5d
 │   └── 3month
 │       └── ...
