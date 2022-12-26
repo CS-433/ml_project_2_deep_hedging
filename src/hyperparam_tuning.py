@@ -6,8 +6,8 @@ from env import StockTradingEnv
 from agent import DDPG_Hedger
 from network import MLP
 
-BATCH_SIZE = 32
-N_EPISODE = 700
+BATCH_SIZE = 1024
+N_EPISODE = 10000
 
 
 def objective(trial):
@@ -15,14 +15,15 @@ def objective(trial):
     # set optuna param range
     critic_lr = 10 ** trial.suggest_float("critic_lr", -6, -1)
     actor_lr = 10 ** trial.suggest_float("actor_lr", -6, -1)
+    update_freq = trial.suggest_int("update_freq", 1, 20)
 
     # define environment and the agent
     env = StockTradingEnv(reset_path=True)
     nState, nAction = env.observation_space.shape[0], env.action_space.shape[0]  # 3, 1
 
-    actor = MLP(nState, 32, nAction, "Sigmoid")
-    qnet_1 = MLP(nState + nAction, 32, nAction, "")
-    qnet_2 = MLP(nState + nAction, 32, nAction, "")
+    actor = MLP(nState, 16, nAction, "Sigmoid")
+    qnet_1 = MLP(nState + nAction, 16, nAction, "")
+    qnet_2 = MLP(nState + nAction, 16, nAction, "")
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
@@ -44,7 +45,7 @@ def objective(trial):
             next_state, reward, done = env.step(action)
 
             # record interaction between environment and the agent
-            agent.store(state, action, reward, next_state, done)
+            agent.store(state, action, -reward, next_state, done)
 
             ep_tot_reward += reward
             state = next_state
@@ -52,14 +53,14 @@ def objective(trial):
             if done:
                 break
 
-        for i in range(200):
+        for i in range(update_freq):
             agent.update(env.price_stat)
         agent.polyak_update()
 
-        epsilon *= 0.995
+        epsilon *= 0.999
         # store total rewards after some training is done
         # we only consider alst 10 total rewards as a quantity to minimize
-        if episode > int(N_EPISODE * 0.9):
+        if episode > int(N_EPISODE * 0.95):
             target_rewards.append(ep_tot_reward)
 
     return np.mean(target_rewards)

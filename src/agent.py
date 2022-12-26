@@ -83,7 +83,10 @@ class DDPG_Hedger:
     def update(self, price_stat, output=False):
         # calculate return of all times in the episode
         if self.buffer.len() < self.batch_size:
-            return
+            if output:
+                return None, None, None
+            else:
+                return
 
         transitions = self.buffer.sample(self.batch_size)
         batch = self.transition(*zip(*transitions))
@@ -141,9 +144,10 @@ class DDPG_Hedger:
         state_action = torch.hstack(
             [states, torch.clip(self.actor(states) * 100, 0, 100)]
         )
+
         q_1, q_2 = self.critic_1(state_action), self.critic_2(state_action)
         cost_std = torch.sqrt(torch.where(q_2 - q_1.pow(2) < 0, 0, q_2 - q_1.pow(2)))
-        actor_loss = (self.critic_1(state_action) + 1.5 * cost_std).mean()
+        actor_loss = (q_1 + 1.5 * cost_std).mean()
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
