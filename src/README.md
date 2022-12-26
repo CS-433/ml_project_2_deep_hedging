@@ -1,14 +1,12 @@
 ---
-
 ### `agent.py`
 
-Agent class (actor, critic_1, critic_2, as well as their target counterparts).
-
+This file contains DDPG agent defined as a class. It contains methods that takes actions given state, update the neural network from stored experiences and resetting, storing the data in experience replay buffer.
 ---
 
 ### `buffer.py`
 
-text
+Defines experience replay buffer which is the part of our DDPG agent. Currently, we have only implemented vanilla experience replay buffer.
 
 ---
 

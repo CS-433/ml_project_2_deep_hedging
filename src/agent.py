@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from copy import deepcopy
-from src.buffer import ExpReplay
+from buffer import ExpReplay
 from collections import namedtuple
 from torch.distributions import Normal
 

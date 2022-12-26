@@ -1,20 +1,21 @@
 import os
 import sys
+
+sys.path.insert(0, "D:/work/Personal/ml_project_2_deep_hedging/src")
+
 import json
 import numpy as np
 import pandas as pd
 
-from src.env import StockTradingEnv
-from src.agent import DDPG_Hedger
-from src.network import MLP, MLP_debug
-
-sys.path.insert(1, "ml_project_2_deep_hedging/src")
+from env import StockTradingEnv
+from agent import DDPG_Hedger
+from network import MLP
 
 
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v8_new"
+    experiment_name = "v9"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
@@ -44,11 +45,6 @@ if __name__ == "__main__":
         state = env.reset()  # s_0
         actions = []
         ep_tot_reward = 0
-
-        if episode % 100 == 0 and episode > 0:
-            isPrint = True
-        else:
-            isPrint = False
 
         while True:
             # normalize the state
