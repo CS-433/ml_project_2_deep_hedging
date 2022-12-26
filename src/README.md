@@ -12,13 +12,19 @@ Defines experience replay buffer which is the part of our DDPG agent. Currently,
 
 ### `env.py`
 
-The environment class implemented with openAI's `gym` framework.
+The environment `StockTradingEnv` class is implemented with openAI's `gym` framework. This will be used across all stages of training process, assessment. We only implemented Accounting P&L scheme as a reward function.
+
+---
+
+### `hyperparam_tuning.py`
+
+This script performs hyperparameter tuning of DDPG agent. Currently, it optimizes actor, critic learning rate, number of agent update for each episode. Hyperparameter tuning is done using optuna and hyperparameters that gives smalles objective function is saved automatically in `model/hypparams.json` which is used in the trainig of the agent.
 
 ---
 
 ### `network.py`
 
-Definitions of the neural networks that represent the agent.
+Definitions of the neural networks that represent the agent. We only used Multi-Layer Perceptron in this project. MLP contains two Linear hidden layers with Layernorm and ReLU activation. User can choose specific activation function at end, we currently support `Tanh, Sigmoid, ReLU`.
 
 ---
 
