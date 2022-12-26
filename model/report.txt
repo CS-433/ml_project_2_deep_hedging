@@ -56,3 +56,11 @@ network:
 changed network layer order.
 ReLU -> LayerNorm (X)
 ReLU -> LayerNorm (X)
+
+
+------------- 9 ---------
+increased batch size to 1024
+main.py saves net params with lowest actor loss
+
+then we use transfer learning, where we load pretrained params first then
+optimize
