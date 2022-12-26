@@ -7,7 +7,7 @@ from agent import DDPG_Hedger
 from network import MLP
 
 BATCH_SIZE = 1024
-N_EPISODE = 10000
+N_EPISODE = 3000
 
 
 def objective(trial):
@@ -27,7 +27,7 @@ def objective(trial):
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
 
     target_rewards = []
-    epsilon = 1
+    epsilon = 0.5
 
     for episode in range(N_EPISODE):
         # reset state
@@ -57,7 +57,7 @@ def objective(trial):
             agent.update(env.price_stat)
         agent.polyak_update()
 
-        epsilon *= 0.999
+        epsilon *= 0.9999
         # store total rewards after some training is done
         # we only consider alst 10 total rewards as a quantity to minimize
         if episode > int(N_EPISODE * 0.95):
