@@ -4,9 +4,7 @@ This is an implementation of the Deep Deterministic Policy Gradient reinforcemen
 
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally. To get a local copy up and running follow these simple example steps.
-
-### Setting up the virtual environment
+### Virtual environment setup
 
 Before running our repository, you need to set up the virtual environment first and run the `requirements.pip` to install necessary packages. Below example is based on python, you can also use conda environment.
 
@@ -23,8 +21,7 @@ In `notebook/dataGen.ipynb`, you can change the parameters of stock/option data 
 
 ### Performance Evaluation
 
-After obtainig train/test data from simulation, you can run `performance_evaluation.ipynb` to check our pretrained agent's hedgin performance. 
-
+After obtainig train/test data from simulation, you can run `performance_evaluation.ipynb` to check our pretrained agent's hedgin performance.
 
 ## Repository Structure
 
