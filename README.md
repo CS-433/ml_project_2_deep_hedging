@@ -91,6 +91,8 @@ Use `pip install requirements` in your terminal to install the necessary librair
 - torch
 - tqdm
 
+Note that packages without specified version, pip downloads the newest one.
+
 ---
 
 ### `model`
