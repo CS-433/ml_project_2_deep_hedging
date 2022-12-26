@@ -7,6 +7,7 @@ from copy import deepcopy
 from buffer import ExpReplay
 from collections import namedtuple
 from torch.distributions import Normal
+from paths import MODEL_ROOT
 
 
 class DDPG_Hedger:
@@ -171,15 +172,23 @@ class DDPG_Hedger:
             trg_param = trg_param * (1.0 - self.tau) + src_param * self.tau
 
     def save(self, name):
-        torch.save(self.critic_1.state_dict(), f"model/{name}/critic_1_weight.pt")
-        torch.save(self.critic_2.state_dict(), f"model/{name}/critic_2_weight.pt")
-        torch.save(self.actor.state_dict(), f"model/{name}/actor_weight.pt")
+        torch.save(
+            self.critic_1.state_dict(), MODEL_ROOT + f"/{name}/critic_1_weight.pt"
+        )
+        torch.save(
+            self.critic_2.state_dict(), MODEL_ROOT + f"/{name}/critic_2_weight.pt"
+        )
+        torch.save(self.actor.state_dict(), MODEL_ROOT + f"/{name}/actor_weight.pt")
 
     def load(self, name):
         # load trained weights to Q_1, Q_2, Actor
-        self.critic_1.load_state_dict(torch.load(f"model/{name}/critic_1_weight.pt"))
-        self.critic_2.load_state_dict(torch.load(f"model/{name}/critic_2_weight.pt"))
-        self.actor.load_state_dict(torch.load(f"model/{name}/actor_weight.pt"))
+        self.critic_1.load_state_dict(
+            torch.load(MODEL_ROOT + f"/{name}/critic_1_weight.pt")
+        )
+        self.critic_2.load_state_dict(
+            torch.load(MODEL_ROOT + f"/{name}/critic_2_weight.pt")
+        )
+        self.actor.load_state_dict(torch.load(MODEL_ROOT + f"/{name}/actor_weight.pt"))
 
         # Copy above 3 to target networks.
         self.critic_1_target = deepcopy(self.critic_1)

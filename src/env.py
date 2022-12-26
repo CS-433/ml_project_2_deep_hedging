@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from gym import spaces
-
+from paths import DATA_ROOT
 
 class StockTradingEnv(gym.Env):
     """Environment for agent, consists of __init__, step, and reset functions"""
@@ -31,10 +31,10 @@ class StockTradingEnv(gym.Env):
         assert frequency in [1, 2, 3, 5], "try different frequency: {1, 2, 3, 5}"
 
         self.asset_price = pd.read_csv(
-            f"data/{maturity}month/{frequency}d/asset_price_{data_type}_sim.csv"
+            DATA_ROOT+f"/{maturity}month/{frequency}d/asset_price_{data_type}_sim.csv"
         ).values
         self.option_price = pd.read_csv(
-            f"data/{maturity}month/{frequency}d/option_price_{data_type}_sim.csv"
+            DATA_ROOT+f"/{maturity}month/{frequency}d/option_price_{data_type}_sim.csv"
         ).values
         self.nPaths = self.option_price.shape[0]
         self.nSteps = self.option_price.shape[1]

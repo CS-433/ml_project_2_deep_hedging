@@ -13,6 +13,14 @@ python -m venv venv
 (venv) pip install -r requirements.pip
 ```
 
+### Root Path setup
+
+Before running the simulation to obtain the data, we need to set the `ROOT_PATH` variable. Go to `src/paths.py` and edit the variable `ROOT_PATH` to your current cloned repository path. Example is as below.
+
+```
+ROOT_PATH = "D:/work/Personal/ml_project_2_deep_hedging"
+```
+
 ### Data generation
 
 After setting up the virtual environment, we need to download training data as current repository does not contain these. First, you need to make `data` folder and run the `notebook/dataGen.ipynb`.
