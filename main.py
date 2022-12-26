@@ -15,7 +15,7 @@ from network import MLP
 if __name__ == "__main__":
 
     # make experiment results folder
-    experiment_name = "v9_3rd"
+    experiment_name = "v9_no_rand_samp"
     result_folder_path = f"model/{experiment_name}"
     os.makedirs(result_folder_path, exist_ok=True)
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     # load agent settings
     agent = DDPG_Hedger(actor, qnet_1, qnet_2, actor_lr, critic_lr, 1, BATCH_SIZE)
-    agent.load("v9_2nd")
+    # agent.load("v9_2nd")
 
     total_rewards = []
     min_actor_loss = 0
